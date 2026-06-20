@@ -8,6 +8,8 @@ import Related from '../components/Related.astro';
 import References from '../components/References.astro';
 import CopyLink from '../components/CopyLink.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import InfoBox from '../components/InfoBox.astro';
+import QualityBadge from '../components/QualityBadge.astro';
 import { getEntryUrl, COLLECTION_LABELS } from '../utils/content';
 import { formatDate, readingTime } from '../utils/format';
 
@@ -23,6 +25,7 @@ const url = getEntryUrl(collection, entry.id);
 const collectionLabel = COLLECTION_LABELS[collection as keyof typeof COLLECTION_LABELS];
 const minutes = readingTime(bodyText);
 const aliases = entry.data.aliases ?? [];
+const hasInfobox = (entry.data.infobox && entry.data.infobox.length > 0) || entry.data.image;
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.description} image={entry.data.image}>
@@ -35,20 +38,46 @@ const aliases = entry.data.aliases ?? [];
       <Breadcrumb collection={collection} collectionLabel={collectionLabel} title={entry.data.title} />
       <header class="article-header">
         <span class="category-chip">{collectionLabel}</span>
-        <h1 class="article-title">{entry.data.title}</h1>
+        <h1 class="article-title">
+          <span class="article-title-text">{entry.data.title}</span>
+          <QualityBadge status={entry.data.quality} />
+        </h1>
+        {entry.data.pronunciation && (
+          <p class="article-pronunciation">/{entry.data.pronunciation}/</p>
+        )}
         {entry.data.description && <p class="article-description">{entry.data.description}</p>}
+        {entry.data.summary && <p class="article-summary">{entry.data.summary}</p>}
         <ArticleMeta entry={entry} minutes={minutes} />
         {aliases.length > 0 && (
           <div class="alias-list">
-            Also known as: {aliases.map((a: string) => <span>{a}</span>).reduce((acc: any[], x: any, i: number) => i === 0 ? [x] : [...acc, ', ', x], [])}
+            Also known as: {aliases.map((a: string, i: number) => (
+              <span>{i > 0 ? ', ' : ''}{a}</span>
+            ))}
           </div>
         )}
-        <div style="margin-top: var(--sp-3); display: flex; gap: var(--sp-2); align-items: center;">
+        <div style="margin-top: var(--sp-3); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap;">
           <CopyLink url={url} />
+          <a class="print-action" href={`/print/${collection}/${entry.id}`} title="Print this article">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            <span>Print</span>
+          </a>
         </div>
       </header>
 
       <div class="article-content">
+        {hasInfobox && (
+          <InfoBox
+            title={entry.data.title}
+            image={entry.data.image}
+            imageCaption={entry.data.imageCaption}
+            items={entry.data.infobox ?? []}
+            class="infobox-float-right"
+          />
+        )}
         <slot />
       </div>
 

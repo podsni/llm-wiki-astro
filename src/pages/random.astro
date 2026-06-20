@@ -1,0 +1,10 @@
+---
+import { getAllEntries, getEntryUrl } from '../utils/content';
+
+const all = await getAllEntries();
+if (all.length === 0) {
+  return Astro.redirect('/');
+}
+const random = all[Math.floor(Math.random() * all.length)];
+return Astro.redirect(getEntryUrl(random.collection, random.entry.id));
+---

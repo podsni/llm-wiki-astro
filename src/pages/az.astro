@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllEntries, getEntryUrl, COLLECTION_LABELS } from '../utils/content';
+import { formatDate } from '../utils/format';
+
+const all = await getAllEntries();
+all.sort((a, b) => a.entry.data.title.localeCompare(b.entry.data.title));
+
+// Group by first letter
+const byLetter = new Map<string, typeof all>();
+for (const item of all) {
+  const letter = (item.entry.data.title[0] || '#').toUpperCase();
+  if (!byLetter.has(letter)) byLetter.set(letter, []);
+  byLetter.get(letter)!.push(item);
+}
+
+const letters = [...byLetter.keys()].sort();
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+---
+
+<BaseLayout title="A–Z Index" description="Browse all articles in the LLM Wiki by title, alphabetically.">
+  <div class="container">
+    <section class="home-section" style="margin-top: var(--sp-7);">
+      <h1 style="font-size: var(--fs-4xl); margin: 0;">A–Z Index</h1>
+      <p class="text-soft" style="font-size: var(--fs-lg); margin-top: var(--sp-2);">Every article in the knowledge base, organized by title.</p>
+    </section>
+
+    <nav class="az-jump" aria-label="Letter navigation">
+      {ALPHABET.map(l => (
+        letters.includes(l)
+          ? <a href={`#letter-${l}`}>{l}</a>
+          : <span class="disabled">{l}</span>
+      ))}
+    </nav>
+
+    {letters.map(letter => (
+      <section>
+        <h2 class="az-letter" id={`letter-${letter}`}>{letter}</h2>
+        <div class="az-grid">
+          {byLetter.get(letter)!.map(({ collection, entry }) => (
+            <a class="az-item" href={getEntryUrl(collection, entry.id)}>
+              <span class="az-item-title">{entry.data.title}</span>
+              <span class="az-item-meta">
+                {COLLECTION_LABELS[collection as keyof typeof COLLECTION_LABELS]} · {formatDate(entry.data.date)}
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    {letters.length === 0 && (
+      <p class="text-soft text-center" style="padding: var(--sp-7);">No articles yet.</p>
+    )}
+  </div>
+</BaseLayout>

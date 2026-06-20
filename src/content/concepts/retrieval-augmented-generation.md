@@ -1,10 +1,25 @@
 ---
 title: Retrieval-Augmented Generation
 description: A technique that grounds LLM outputs in external knowledge by retrieving relevant documents at query time, reducing hallucination and extending the model's knowledge.
+summary: Look it up before you answer. RAG sandwiches external, current, or private knowledge into the LLM's context so its answers rest on something real.
 date: 2024-02-20
 updated: 2024-12-01
 category: ai
 tags: [ai, llm, rag, knowledge-base, retrieval]
+quality: good
+infobox:
+  - label: Type
+    value: LLM augmentation pattern
+  - label: First proposed
+    value: 2020 (Lewis et al., Facebook AI)
+  - label: Components
+    value: Embedding model, vector store, retriever, generator
+  - label: Solves
+    value: Hallucination, knowledge cutoff, private data
+  - label: Common stores
+    value: Pinecone, Weaviate, Qdrant, Chroma
+  - label: See also
+    value: '[Embedding](/concepts/embedding), [Knowledge Base](/concepts/knowledge-base)'
 aliases: [RAG, retrieval augmented generation]
 related: [large-language-model, embedding, knowledge-base, context-window]
 references:

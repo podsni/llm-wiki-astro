@@ -1,10 +1,25 @@
 ---
 title: Context Window
 description: The maximum amount of text a language model can process in a single inference call, measured in tokens — the fundamental memory limit of an LLM.
+summary: The LLM's working memory. Everything the model "knows" about the current task must fit inside it — the system prompt, history, retrieved docs, the question.
 date: 2024-02-01
 updated: 2024-11-15
 category: ai
 tags: [ai, llm, context, tokens, memory]
+quality: good
+infobox:
+  - label: Unit
+    value: Tokens
+  - label: Modern range
+    value: 8K – 2M tokens
+  - label: English ratio
+    value: 1 token ≈ 0.75 words
+  - label: Cost
+    value: Roughly quadratic in length
+  - label: Gotcha
+    value: '"Lost in the middle" — models recall beginning/end better'
+  - label: See also
+    value: '[Large Language Model](/concepts/large-language-model)'
 aliases: [context length, context size, token limit]
 related: [large-language-model, transformer, retrieval-augmented-generation, ai-agent]
 references:

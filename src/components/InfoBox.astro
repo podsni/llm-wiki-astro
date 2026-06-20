@@ -1,0 +1,46 @@
+---
+/**
+ * InfoBox — Tolkien-Gateway-style key-facts panel.
+ * Renders to the right of the article on desktop, stacks below on mobile.
+ * Fields: array of {label, value (string|array of strings)}; optional image.
+ */
+interface InfoItem {
+  label: string;
+  value: string | string[];
+}
+
+interface Props {
+  title?: string;
+  image?: string;
+  imageCaption?: string;
+  items: InfoItem[];
+  class?: string;
+}
+
+const { title, image, imageCaption, items, class: className } = Astro.props;
+const classes = ['infobox', className].filter(Boolean).join(' ');
+---
+
+<aside class={classes} aria-label={title || 'Key facts'}>
+  {title && <h3 class="infobox-title">{title}</h3>}
+  {image && (
+    <figure class="infobox-figure">
+      <img src={image} alt={imageCaption || title || ''} loading="lazy" />
+      {imageCaption && <figcaption>{imageCaption}</figcaption>}
+    </figure>
+  )}
+  <dl class="infobox-list">
+    {items.map(item => (
+      <div class="infobox-row">
+        <dt>{item.label}</dt>
+        <dd>
+          {Array.isArray(item.value)
+            ? item.value.map((v, i) => (
+                <>{i > 0 && <br />}{v}</>
+              ))
+            : <Fragment set:html={item.value} />}
+        </dd>
+      </div>
+    ))}
+  </dl>
+</aside>

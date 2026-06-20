@@ -1,0 +1,29 @@
+---
+/**
+ * QualityBadge — small chip indicating article quality (Featured/Good/Stub).
+ * Rendered in the article header next to the title.
+ */
+interface Props {
+  status?: 'featured' | 'good' | 'stub' | 'wip';
+}
+const { status } = Astro.props;
+const labels: Record<string, string> = {
+  featured: 'Featured',
+  good: 'Good',
+  stub: 'Stub',
+  wip: 'Work in progress',
+};
+const icons: Record<string, string> = {
+  featured: '★',
+  good: '✓',
+  stub: '§',
+  wip: '◐',
+};
+---
+
+{status && (
+  <span class={`quality-badge quality-${status}`} title={`Article status: ${labels[status]}`}>
+    <span class="quality-icon" aria-hidden="true">{icons[status]}</span>
+    <span>{labels[status]}</span>
+  </span>
+)}

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf8f1"/>
+      <stop offset="1" stop-color="#f3efe4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Border frame -->
+  <rect x="40" y="40" width="1120" height="550" fill="none" stroke="#2d4a3a" stroke-width="2" opacity="0.3"/>
+  <rect x="60" y="60" width="1080" height="510" fill="none" stroke="#2d4a3a" stroke-width="1" opacity="0.5"/>
+
+  <!-- Logo mark -->
+  <g transform="translate(120, 180)">
+    <rect width="120" height="120" rx="14" fill="#2d4a3a"/>
+    <text x="60" y="86" text-anchor="middle" font-family="Georgia, serif" font-size="80" font-weight="700" fill="#fbf8f1">L</text>
+  </g>
+
+  <!-- Title -->
+  <text x="280" y="240" font-family="Georgia, 'Times New Roman', serif" font-size="100" font-weight="700" fill="#2a2622" letter-spacing="-2">LLM Wiki</text>
+
+  <!-- Subtitle -->
+  <text x="280" y="300" font-family="Georgia, serif" font-size="32" font-style="italic" fill="#5a5247">A personal knowledge base</text>
+
+  <!-- Description -->
+  <text x="120" y="500" font-family="-apple-system, 'Segoe UI', sans-serif" font-size="28" fill="#5a5247">Articles, concepts, research, projects, and the connections</text>
+  <text x="120" y="540" font-family="-apple-system, 'Segoe UI', sans-serif" font-size="28" fill="#5a5247">between them. A digital garden and encyclopedia.</text>
+
+  <!-- Decorative bottom flourish -->
+  <line x1="120" y1="570" x2="240" y2="570" stroke="#2d4a3a" stroke-width="2"/>
+  <circle cx="270" cy="570" r="4" fill="#2d4a3a"/>
+  <line x1="300" y1="570" x2="420" y2="570" stroke="#2d4a3a" stroke-width="2"/>
+</svg>

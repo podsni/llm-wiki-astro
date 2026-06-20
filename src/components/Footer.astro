@@ -1,14 +1,37 @@
 ---
+import { getAllEntries } from '../utils/content';
+
+interface Props {
+  totalArticles?: number;
+}
+const { totalArticles = 0 } = Astro.props;
 const year = new Date().getFullYear();
+
+// Last build time (used as "last updated")
+const lastUpdated = new Date().toISOString().split('T')[0];
 ---
 
 <footer class="site-footer">
   <div class="site-footer-inner">
-    <div>
-      <strong>LLM Wiki</strong> — a personal knowledge base. Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>. Content licensed CC BY-SA 4.0.
+    <div class="site-footer-stats">
+      <div class="site-footer-stat">
+        <strong>{totalArticles}</strong>
+        <span>articles</span>
+      </div>
+      <div class="site-footer-stat">
+        <strong>CC BY-SA 4.0</strong>
+        <span>license</span>
+      </div>
+      <div class="site-footer-stat">
+        <strong>{lastUpdated}</strong>
+        <span>last build</span>
+      </div>
     </div>
     <div>
-      <a href="/rss.xml">RSS</a> · <a href="/sitemap-index.xml">Sitemap</a> · <a href="/about">About</a>
+      <strong>LLM Wiki</strong> — a personal knowledge base. Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>. Inspired by the digital garden tradition.
+    </div>
+    <div>
+      <a href="/rss.xml">RSS</a> · <a href="/sitemap-index.xml">Sitemap</a> · <a href="/about">About</a> · <a href="/az">A–Z</a> · <a href="/random">Random</a>
     </div>
     <div>
       © {year}

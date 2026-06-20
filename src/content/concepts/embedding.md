@@ -1,10 +1,25 @@
 ---
 title: Embedding
 description: A dense vector representation of data (text, images, audio) in a continuous space where semantic similarity corresponds to geometric proximity.
+summary: Words, images, and users mapped to points in space. Distance is meaning. This is the geometric heart of modern machine learning.
 date: 2024-01-20
 updated: 2024-10-30
 category: ai
 tags: [ai, embedding, vector, representation-learning]
+quality: good
+infobox:
+  - label: Type
+    value: Representation learning
+  - label: Output
+    value: Dense vector (typically 64 – 4096 dimensions)
+  - label: Property
+    value: Similarity = proximity in vector space
+  - label: First popular method
+    value: Word2Vec (2013)
+  - label: Used in
+    value: Search (RAG), recommendation, clustering, classification
+  - label: See also
+    value: '[Retrieval-Augmented Generation](/concepts/retrieval-augmented-generation)'
 aliases: [embeddings, vector representation, vector embeddings]
 related: [large-language-model, transformer, retrieval-augmented-generation]
 references:

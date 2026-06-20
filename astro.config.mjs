@@ -33,5 +33,10 @@ export default defineConfig({
       // Cloudflare Pages will use the default. Local dev allows LAN access.
       host: true,
     },
+    resolve: {
+      alias: {
+        '~': new URL('./src/', import.meta.url).pathname,
+      },
+    },
   },
 });

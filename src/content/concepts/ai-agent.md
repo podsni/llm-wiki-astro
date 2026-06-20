@@ -1,10 +1,25 @@
 ---
 title: AI Agent
 description: An LLM-powered system that can perceive its environment, reason about goals, and take actions through tools — going beyond single-prompt generation.
+summary: An LLM in a loop. Observe, think, act, re-observe. The shift from "answer one question" to "pursue a goal across many steps."
 date: 2024-03-10
 updated: 2024-12-15
 category: ai
 tags: [ai, agent, llm, tool-use, autonomous]
+quality: featured
+infobox:
+  - label: Type
+    value: Autonomous system
+  - label: Core loop
+    value: Observe → Think → Act → Repeat
+  - label: Tooling
+    value: Function calling, code execution, web browsing
+  - label: Examples
+    value: Claude Computer Use, AutoGPT, Devin, Cursor Agent
+  - label: Risks
+    value: Runaway loops, cost, prompt injection
+  - label: See also
+    value: '[Large Language Model](/concepts/large-language-model)'
 aliases: [AI agents, agents, LLM agent, LLM agents]
 related: [large-language-model, context-window, retrieval-augmented-generation]
 references:

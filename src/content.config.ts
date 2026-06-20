@@ -6,6 +6,7 @@ import { glob } from 'astro/loaders';
 const baseFields = {
   title: z.string().min(1),
   description: z.string().default(''),
+  summary: z.string().optional(), // 1-2 sentence TL;DR
   date: z.coerce.date(),
   updated: z.coerce.date().optional(),
   category: z.string().default('uncategorized'),
@@ -21,6 +22,12 @@ const baseFields = {
     date: z.coerce.date().optional(),
     note: z.string().optional(),
   })).default([]),
+  quality: z.enum(['featured', 'good', 'stub', 'wip']).optional(),
+  infobox: z.array(z.object({
+    label: z.string(),
+    value: z.union([z.string(), z.array(z.string()), z.number()]),
+  })).optional(),
+  pronunciation: z.string().optional(),
 };
 
 const notes = defineCollection({

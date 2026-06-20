@@ -1,0 +1,24 @@
+---
+/**
+ * PullQuote — Tolkien-style "lore" callout. Italic, centered, with optional
+ * attribution. Use for memorable lines or in-universe quotes.
+ */
+interface Props {
+  text: string;
+  attribution?: string;
+  source?: string;
+}
+const { text, attribution, source } = Astro.props;
+---
+
+<figure class="pullquote">
+  <blockquote cite={source}>
+    <p>{text}</p>
+  </blockquote>
+  {(attribution || source) && (
+    <figcaption>
+      {attribution && <span class="pullquote-attribution">— {attribution}</span>}
+      {source && <span class="pullquote-source"> ({source})</span>}
+    </figcaption>
+  )}
+</figure>

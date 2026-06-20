@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getRecentEntries, getEntryUrl, COLLECTION_LABELS } from '../utils/content';
+import { formatDate, daysAgo } from '../utils/format';
+
+const all = await getRecentEntries();
+
+// Split into "new" (created in last 30 days) and "updated" (modified in last 30 days)
+const newEntries = all.filter(({ entry }) => daysAgo(entry.data.date) <= 30);
+const recentlyUpdated = all
+  .filter(({ entry }) => entry.data.updated && daysAgo(entry.data.updated) <= 30)
+  .filter(({ entry }) => daysAgo(entry.data.date) > 30); // only show as "updated" if it's older
+
+const formatAction = (entry: any) => {
+  if (entry.data.updated && daysAgo(entry.data.updated) <= 30 && daysAgo(entry.data.date) > 30) {
+    return { label: 'updated', class: 'update' };
+  }
+  return { label: 'new', class: 'new' };
+};
+---
+
+<BaseLayout title="What's New" description="Recent changes and new articles in the LLM Wiki.">
+  <div class="container">
+    <section class="home-section" style="margin-top: var(--sp-7);">
+      <h1 style="font-size: var(--fs-4xl); margin: 0;">What's New</h1>
+      <p class="text-soft" style="font-size: var(--fs-lg); margin-top: var(--sp-2);">Articles created or updated in the last 30 days.</p>
+    </section>
+
+    {all.length === 0 && (
+      <p class="text-soft text-center" style="padding: var(--sp-7);">No articles yet.</p>
+    )}
+
+    {newEntries.length > 0 && (
+      <section style="margin: var(--sp-7) 0;">
+        <h2 style="font-size: var(--fs-2xl); border: none; padding: 0;">New articles <span class="text-muted" style="font-size: var(--fs-base);">({newEntries.length})</span></h2>
+        <ul class="recent-list">
+          {newEntries.map(({ collection, entry }) => {
+            const action = formatAction(entry);
+            return (
+              <li class="recent-item">
+                <span class="recent-date">{formatDate(entry.data.date)}</span>
+                <span class="recent-content">
+                  <a class="recent-title" href={getEntryUrl(collection, entry.id)}>
+                    {entry.data.title}
+                    <span class={`recent-action ${action.class}`}>{action.label}</span>
+                  </a>
+                  {entry.data.description && (
+                    <p class="text-soft" style="margin: var(--sp-1) 0 0; font-size: var(--fs-sm);">
+                      {entry.data.description}
+                    </p>
+                  )}
+                  <span class="az-item-meta">{COLLECTION_LABELS[collection as keyof typeof COLLECTION_LABELS]}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )}
+
+    {recentlyUpdated.length > 0 && (
+      <section style="margin: var(--sp-7) 0;">
+        <h2 style="font-size: var(--fs-2xl); border: none; padding: 0;">Recently updated <span class="text-muted" style="font-size: var(--fs-base);">({recentlyUpdated.length})</span></h2>
+        <ul class="recent-list">
+          {recentlyUpdated.map(({ collection, entry }) => (
+            <li class="recent-item">
+              <span class="recent-date">{formatDate(entry.data.updated!)}</span>
+              <span class="recent-content">
+                <a class="recent-title" href={getEntryUrl(collection, entry.id)}>
+                  {entry.data.title}
+                  <span class="recent-action update">updated</span>
+                </a>
+                <span class="az-item-meta">
+                  {COLLECTION_LABELS[collection as keyof typeof COLLECTION_LABELS]} · originally {formatDate(entry.data.date)}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {newEntries.length === 0 && recentlyUpdated.length === 0 && all.length > 0 && (
+      <p class="text-soft">No activity in the last 30 days. The wiki is currently quiet.</p>
+    )}
+  </div>
+</BaseLayout>

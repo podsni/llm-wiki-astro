@@ -1,10 +1,28 @@
 ---
 title: Transformer
 description: The neural network architecture that revolutionized NLP through self-attention, enabling parallel sequence processing and forming the basis of all modern LLMs.
+summary: The architecture that ended the RNN era. Self-attention lets every token look at every other token in parallel, making both training and long-range reasoning tractable at scale.
 date: 2024-01-10
 updated: 2024-11-05
 category: ai
 tags: [ai, architecture, deep-learning, neural-network]
+quality: featured
+pronunciation: trans-for-mer
+infobox:
+  - label: Type
+    value: Neural network architecture
+  - label: Introduced
+    value: 2017
+  - label: Paper
+    value: "Attention Is All You Need"
+  - label: Authors
+    value: Vaswani et al. (Google Brain)
+  - label: Key innovation
+    value: Self-attention (no recurrence, no convolutions)
+  - label: Variants
+    value: Encoder-only (BERT), Decoder-only (GPT), Encoder-decoder (T5)
+  - label: See also
+    value: '[Large Language Model](/concepts/large-language-model)'
 aliases: [Transformers, transformer architecture, self-attention]
 related: [large-language-model, embedding, context-window]
 references:

@@ -1,10 +1,30 @@
 ---
 title: Large Language Model
 description: A neural network trained on massive text corpora to generate and understand natural language, forming the foundation of modern AI assistants.
+summary: The dominant class of AI system in 2026 — transformer-based, token-predicting, instruction-tuned. Underpins every modern AI assistant.
 date: 2024-01-15
 updated: 2024-12-20
 category: ai
 tags: [ai, llm, neural-network, foundation-model]
+quality: featured
+pronunciation: larj lang-gwij mo-del
+infobox:
+  - label: Type
+    value: Neural network
+  - label: Architecture
+    value: Transformer
+  - label: Introduced
+    value: 2017 (Transformer) / 2018 (GPT-1)
+  - label: Parameters
+    value: 1B – 1T+ depending on model
+  - label: Training data
+    value: Hundreds of GB to tens of TB of text
+  - label: Key capability
+    value: Next-token prediction
+  - label: Invented by
+    value: Various labs; field led by Vaswani et al., OpenAI, Google, Anthropic
+  - label: See also
+    value: '[Transformer](/concepts/transformer), [Context Window](/concepts/context-window)'
 aliases: [LLM, Large Language Models, language model]
 related: [transformer, embedding, context-window, retrieval-augmented-generation, ai-agent]
 references:
@@ -21,6 +41,13 @@ references:
 ---
 
 A **Large Language Model (LLM)** is a type of [neural network](/concepts/embedding) trained on vast corpora of text to predict the next token in a sequence. Through scale — both in parameters (often hundreds of billions) and training data (trillions of tokens) — these models develop emergent capabilities including reasoning, translation, code generation, and conversation.
+
+<figure class="pullquote">
+  <blockquote>
+    <p>It is a truth universally acknowledged, that a single transformer in possession of a good attention mechanism, must be in want of a context window.</p>
+  </blockquote>
+  <figcaption><span class="pullquote-attribution">— paraphrased</span> <span class="pullquote-source">(in the spirit of Jane Austen, about LLMs)</span></figcaption>
+</figure>
 
 ## How they work
 

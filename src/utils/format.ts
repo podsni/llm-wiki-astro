@@ -43,3 +43,12 @@ export function slugify(s: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 }
+
+/**
+ * How many days ago a date was. Returns Infinity for future dates.
+ */
+export function daysAgo(d: Date | string): number {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  const ms = Date.now() - date.getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}

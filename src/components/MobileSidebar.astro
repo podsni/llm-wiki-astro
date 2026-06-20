@@ -1,0 +1,105 @@
+---
+/**
+ * MobileSidebar — off-canvas drawer containing the full sidebar nav.
+ * Toggled from Header via the hamburger button.
+ */
+import { getAllCategories, getAllTags } from '../utils/content';
+
+interface Props {
+  activeSlug?: string;
+  activeCollection?: string;
+}
+const { activeSlug, activeCollection } = Astro.props;
+const path = Astro.url.pathname;
+const categories = await getAllCategories();
+const tags = await getAllTags();
+---
+
+<div class="mobile-sidebar" data-mobile-sidebar aria-hidden="true">
+  <div class="mobile-sidebar-backdrop" data-mobile-sidebar-close></div>
+  <aside class="mobile-sidebar-panel" role="dialog" aria-label="Knowledge base navigation">
+    <div class="mobile-sidebar-header">
+      <span class="site-logo-mark">L</span>
+      <span>LLM Wiki</span>
+      <button class="mobile-sidebar-close" data-mobile-sidebar-close aria-label="Close menu">×</button>
+    </div>
+    <nav class="sidebar-nav">
+      <h3>Browse</h3>
+      <ul>
+        <li><a href="/" class={path === '/' ? 'active' : ''}>Home</a></li>
+        <li><a href="/articles" class={path === '/articles' ? 'active' : ''}>All articles</a></li>
+        <li><a href="/timeline" class={path === '/timeline' ? 'active' : ''}>Timeline</a></li>
+        <li><a href="/graph" class={path === '/graph' ? 'active' : ''}>Graph view</a></li>
+        <li><a href="/archive" class={path === '/archive' ? 'active' : ''}>Archive</a></li>
+        <li><a href="/recent">What's new</a></li>
+        <li><a href="/az">A–Z index</a></li>
+        <li><a href="/about" class={path === '/about' ? 'active' : ''}>About</a></li>
+      </ul>
+
+      <h3>Collections</h3>
+      <ul>
+        <li><a href="/articles?type=notes">Notes</a></li>
+        <li><a href="/articles?type=articles">Articles</a></li>
+        <li><a href="/articles?type=concepts">Concepts</a></li>
+        <li><a href="/articles?type=projects">Projects</a></li>
+        <li><a href="/articles?type=books">Books</a></li>
+        <li><a href="/articles?type=research">Research</a></li>
+        <li><a href="/articles?type=people">People</a></li>
+        <li><a href="/articles?type=timeline">Timeline</a></li>
+        <li><a href="/articles?type=sources">Sources</a></li>
+      </ul>
+
+      {categories.length > 0 && (
+        <details class="sidebar-categories" open>
+          <summary>Categories ({categories.length})</summary>
+          <ul>
+            {categories.slice(0, 20).map(c => (
+              <li><a href={`/category/${c.category}`}>{c.category} ({c.count})</a></li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {tags.length > 0 && (
+        <details class="sidebar-categories">
+          <summary>Tags ({tags.length})</summary>
+          <ul>
+            {tags.slice(0, 30).map(t => (
+              <li><a href={`/tag/${t.tag}`}>#{t.tag} ({t.count})</a></li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </nav>
+  </aside>
+</div>
+
+<script>
+  const sidebar = document.querySelector('[data-mobile-sidebar]');
+  if (sidebar) {
+    const open = () => {
+      sidebar.setAttribute('data-open', 'true');
+      sidebar.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    };
+    const close = () => {
+      sidebar.removeAttribute('data-open');
+      sidebar.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    };
+    document.querySelectorAll('[data-mobile-sidebar-open]').forEach(btn => {
+      btn.addEventListener('click', open);
+    });
+    document.querySelectorAll('[data-mobile-sidebar-close]').forEach(btn => {
+      btn.addEventListener('click', close);
+    });
+    // Close on link click
+    sidebar.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', close);
+    });
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.hasAttribute('data-open')) close();
+    });
+  }
+</script>
