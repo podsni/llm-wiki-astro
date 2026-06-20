@@ -15,7 +15,7 @@ const categories = await getAllCategories();
 const tags = await getAllTags();
 ---
 
-<div class="mobile-sidebar" data-mobile-sidebar aria-hidden="true">
+<div class="mobile-sidebar" id="mobile-sidebar" data-mobile-sidebar aria-hidden="true">
   <div class="mobile-sidebar-backdrop" data-mobile-sidebar-close></div>
   <aside class="mobile-sidebar-panel" role="dialog" aria-label="Knowledge base navigation">
     <div class="mobile-sidebar-header">
@@ -75,21 +75,30 @@ const tags = await getAllTags();
 </div>
 
 <script>
-  const sidebar = document.querySelector('[data-mobile-sidebar]');
-  if (sidebar) {
+  const sidebar = document.querySelector<HTMLElement>('[data-mobile-sidebar]');
+  const openers = document.querySelectorAll<HTMLElement>('[data-mobile-sidebar-open]');
+  if (sidebar && openers.length) {
     const open = () => {
       sidebar.setAttribute('data-open', 'true');
       sidebar.setAttribute('aria-hidden', 'false');
+      openers.forEach((btn) => btn.setAttribute('aria-expanded', 'true'));
       document.body.style.overflow = 'hidden';
+      // Focus first link for keyboard users
+      requestAnimationFrame(() => {
+        const firstLink = sidebar.querySelector<HTMLElement>('a, button');
+        firstLink?.focus();
+      });
     };
     const close = () => {
       sidebar.removeAttribute('data-open');
       sidebar.setAttribute('aria-hidden', 'true');
+      openers.forEach((btn) => btn.setAttribute('aria-expanded', 'false'));
       document.body.style.overflow = '';
+      // Return focus to the opener
+      const lastOpener = openers[openers.length - 1];
+      if (lastOpener) lastOpener.focus();
     };
-    document.querySelectorAll('[data-mobile-sidebar-open]').forEach(btn => {
-      btn.addEventListener('click', open);
-    });
+    openers.forEach((btn) => btn.addEventListener('click', open));
     document.querySelectorAll('[data-mobile-sidebar-close]').forEach(btn => {
       btn.addEventListener('click', close);
     });

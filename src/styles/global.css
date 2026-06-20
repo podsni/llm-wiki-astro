@@ -1,52 +1,58 @@
 /* ============================================
    LLM Wiki — Design tokens
-   Tolkien Gateway inspired: warm cream bg,
-   dark green primary, serif headings, readable body.
+   A personal knowledge base with the quiet authority
+   of a well-bound reference book.
    ============================================ */
 
 :root {
-  /* Light theme — warm cream, dark green */
-  --color-bg: #fbf8f1;
+  /* Light theme — off-white tinted toward the brand's own green hue
+     (NOT the warm-tinted cream / paper / parchment AI default). */
+  --color-bg: oklch(0.972 0.004 145);
   --color-bg-elev: #ffffff;
-  --color-bg-soft: #f3efe4;
-  --color-bg-code: #f3efe4;
-  --color-border: #e0d8c4;
-  --color-border-soft: #ece4d0;
-  --color-text: #2a2622;
-  --color-text-soft: #5a5247;
-  --color-text-muted: #8a7f6c;
-  --color-primary: #2d4a3a;
-  --color-primary-soft: #3a5d4a;
-  --color-primary-bg: #e6ede8;
-  --color-accent: #8b3a2e;
-  --color-link: #2d4a3a;
-  --color-link-hover: #8b3a2e;
-  --color-tag-bg: #e6ede8;
-  --color-tag-text: #2d4a3a;
-  --color-warning: #8b3a2e;
+  --color-bg-soft: oklch(0.955 0.006 145);
+  --color-bg-sunken: oklch(0.945 0.008 145);
+  --color-bg-code: oklch(0.962 0.005 145);
+  --color-border: oklch(0.892 0.012 145);
+  --color-border-soft: oklch(0.928 0.008 145);
+  --color-text: oklch(0.22 0.012 145);
+  --color-text-soft: oklch(0.42 0.014 145);
+  --color-text-muted: oklch(0.58 0.012 145);
+  --color-primary: oklch(0.32 0.06 155);          /* deep forest green */
+  --color-primary-soft: oklch(0.42 0.07 155);
+  --color-primary-bg: oklch(0.94 0.025 155);
+  --color-accent: oklch(0.48 0.13 40);            /* burnt sienna */
+  --color-link: oklch(0.32 0.06 155);
+  --color-link-hover: oklch(0.48 0.13 40);
+  --color-tag-bg: oklch(0.94 0.018 155);
+  --color-tag-text: oklch(0.32 0.06 155);
+  --color-warning: oklch(0.48 0.13 40);
 
-  /* Typography */
-  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Cambria', 'Georgia', 'Times New Roman', serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Menlo', 'Consolas', monospace;
+  /* Typography — Spectral (Production Type) for literary display,
+     Inter for UI density. Both real choices, neither on the
+     reflex-reject list. Web fonts loaded via Google Fonts. */
+  --font-serif: 'Spectral', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
+  /* Fluid type scale (clamp). min / fluid / max in rem.
+     Body is fixed; display & headings are fluid. */
   --fs-xs: 0.8125rem;
-  --fs-sm: 0.875rem;
+  --fs-sm: 0.9375rem;            /* 15px — kept > 14 for readability */
   --fs-base: 1rem;
-  --fs-md: 1.0625rem;
-  --fs-lg: 1.1875rem;
-  --fs-xl: 1.4375rem;
-  --fs-2xl: 1.75rem;
-  --fs-3xl: 2.125rem;
-  --fs-4xl: 2.625rem;
-  --fs-5xl: 3.25rem;
+  --fs-md: 1.125rem;
+  --fs-lg: clamp(1.1875rem, 1.1rem + 0.4vw, 1.3125rem);
+  --fs-xl: clamp(1.375rem, 1.25rem + 0.6vw, 1.625rem);
+  --fs-2xl: clamp(1.625rem, 1.4rem + 1.1vw, 2.0625rem);
+  --fs-3xl: clamp(1.875rem, 1.5rem + 1.85vw, 2.625rem);
+  --fs-4xl: clamp(2.125rem, 1.6rem + 2.6vw, 3.25rem);
+  --fs-5xl: clamp(2.5rem, 1.7rem + 4vw, 4.5rem);
 
-  --lh-tight: 1.2;
+  --lh-tight: 1.15;
   --lh-snug: 1.35;
   --lh-normal: 1.6;
   --lh-loose: 1.75;
 
-  /* Spacing */
+  /* Spacing — 4px base, larger steps for breathing */
   --sp-1: 0.25rem;
   --sp-2: 0.5rem;
   --sp-3: 0.75rem;
@@ -57,6 +63,7 @@
   --sp-8: 3rem;
   --sp-9: 4rem;
   --sp-10: 5rem;
+  --sp-11: 6.5rem;
 
   /* Layout */
   --max-w-content: 720px;
@@ -65,37 +72,36 @@
   --sidebar-w: 240px;
   --toc-w: 220px;
 
-  /* Effects */
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --transition: 0.2s ease;
+  /* Effects — refined, restraint on shadow + radius */
+  --radius-sm: 3px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow: 0 1px 3px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 8px rgb(0 0 0 / 0.08);
+  --transition: 160ms cubic-bezier(0.22, 1, 0.36, 1);   /* ease-out-quint */
+  --transition-slow: 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :root[data-theme='dark'] {
-  --color-bg: #1a1f1a;
-  --color-bg-elev: #232a23;
-  --color-bg-soft: #2a322a;
-  --color-bg-code: #232a23;
-  --color-border: #3a4438;
-  --color-border-soft: #2f372f;
-  --color-text: #e8e4d8;
-  --color-text-soft: #c0baa8;
-  --color-text-muted: #8a8472;
-  --color-primary: #8fb09a;
-  --color-primary-soft: #a8c4b0;
-  --color-primary-bg: #2a3a2e;
-  --color-accent: #d4816a;
-  --color-link: #8fb09a;
-  --color-link-hover: #d4816a;
-  --color-tag-bg: #2a3a2e;
-  --color-tag-text: #a8c4b0;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --color-bg: oklch(0.16 0.012 155);
+  --color-bg-elev: oklch(0.21 0.014 155);
+  --color-bg-soft: oklch(0.24 0.014 155);
+  --color-bg-sunken: oklch(0.19 0.012 155);
+  --color-bg-code: oklch(0.22 0.014 155);
+  --color-border: oklch(0.32 0.014 155);
+  --color-border-soft: oklch(0.27 0.012 155);
+  --color-text: oklch(0.93 0.008 145);
+  --color-text-soft: oklch(0.78 0.012 145);
+  --color-text-muted: oklch(0.6 0.014 145);
+  --color-primary: oklch(0.78 0.06 155);
+  --color-primary-soft: oklch(0.85 0.05 155);
+  --color-primary-bg: oklch(0.28 0.04 155);
+  --color-accent: oklch(0.72 0.13 40);
+  --color-link: oklch(0.78 0.06 155);
+  --color-link-hover: oklch(0.72 0.13 40);
+  --color-tag-bg: oklch(0.28 0.04 155);
+  --color-tag-text: oklch(0.85 0.05 155);
 }
 
 /* ============================================
@@ -124,28 +130,62 @@ body { touch-action: manipulation; }
   }
 }
 
-/* Better focus styles for keyboard nav (accessibility) */
+/* Strong, visible focus ring for keyboard nav.
+   Uses inset + outline ring combo for high contrast on any background. */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
-button:focus-visible, a:focus-visible {
+button:focus-visible, a:focus-visible, summary:focus-visible {
   outline-offset: 3px;
 }
+/* Darker / lighter ring on dark mode for contrast */
+:root[data-theme='dark'] :focus-visible {
+  outline-color: var(--color-primary-soft);
+}
+/* Remove the default ring on the dialog itself (it has its own focus) */
+.search-modal:focus-visible { outline: none; }
 
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: var(--fs-md);
+  font-size: 1rem;
   line-height: var(--lh-normal);
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
-  transition: background var(--transition), color var(--transition);
+  transition: background var(--transition-slow), color var(--transition-slow);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--sp-3);
+  color: var(--color-text);
+  /* Loosen the AI-default tight letter-spacing on display. */
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--fs-4xl); margin-top: var(--sp-6); }
+h2 { font-size: var(--fs-2xl); margin-top: var(--sp-7); }
+h3 { font-size: var(--fs-xl); margin-top: var(--sp-6); }
+h4 { font-size: var(--fs-lg); margin-top: var(--sp-5); }
+h5 { font-size: var(--fs-md); margin-top: var(--sp-4); }
+h6 {
+  font-size: var(--fs-sm);
+  margin-top: var(--sp-4);
+  color: var(--color-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-sans);
+  font-weight: 600;
 }
 
 /* Article body — Tolkien-book typography */
@@ -164,18 +204,14 @@ body {
 .article-content > p:first-of-type::first-letter,
 .article-content > div > p:first-of-type::first-letter {
   font-family: var(--font-serif);
+  font-weight: 500;
   float: left;
-  font-size: 4.2em;
-  line-height: 0.85;
-  padding: 0.05em 0.12em 0 0;
-  font-weight: 700;
+  font-size: 4.4em;
+  line-height: 0.82;
+  padding: 0.06em 0.1em 0 0;
   color: var(--color-primary);
   font-feature-settings: 'kern';
-}
-.article-content > p:first-of-type::first-line,
-.article-content > div > p:first-of-type::first-line {
-  font-variant: small-caps;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -214,10 +250,10 @@ li > ul, li > ol { margin: var(--sp-1) 0; }
 blockquote {
   margin: var(--sp-5) 0;
   padding: var(--sp-3) var(--sp-5);
-  border-left: 3px solid var(--color-primary);
   background: var(--color-bg-soft);
   color: var(--color-text-soft);
   font-style: italic;
+  border-radius: var(--radius);
 }
 blockquote p:last-child { margin-bottom: 0; }
 
@@ -546,17 +582,41 @@ main { min-height: 70vh; }
    ============================================ */
 
 .article-header { margin-bottom: var(--sp-7); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--color-border-soft); }
-.article-header .category-chip {
-  display: inline-block;
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-primary);
-  font-weight: 600;
-  margin-bottom: var(--sp-3);
+
+/* Meta line above the title: collection · quality (no all-caps eyebrow) */
+.article-meta-line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
 }
-.article-title { font-size: var(--fs-4xl); margin: 0 0 var(--sp-3); }
-.article-description { font-size: var(--fs-lg); color: var(--color-text-soft); margin: 0 0 var(--sp-4); }
+.article-collection {
+  color: var(--color-text-soft);
+  font-weight: 500;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+}
+.article-meta-dot {
+  color: var(--color-border);
+  font-size: var(--fs-md);
+  line-height: 1;
+}
+.article-meta-quality { display: inline-flex; }
+
+.article-title { font-size: var(--fs-4xl); margin: 0 0 var(--sp-3); letter-spacing: -0.02em; }
+.article-description { font-size: var(--fs-lg); color: var(--color-text-soft); margin: 0 0 var(--sp-4); line-height: 1.5; }
+
+/* Action row at the bottom of the header */
+.article-actions {
+  margin-top: var(--sp-4);
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .article-meta {
   display: flex;
   flex-wrap: wrap;
@@ -564,14 +624,29 @@ main { min-height: 70vh; }
   font-size: var(--fs-sm);
   color: var(--color-text-muted);
   align-items: center;
+  font-variant-numeric: tabular-nums;
 }
 .article-meta span { display: inline-flex; align-items: center; gap: var(--sp-1); }
 .article-meta svg { width: 14px; height: 14px; }
 
-.article-content { font-size: var(--fs-md); line-height: var(--lh-loose); }
-.article-content h2 { margin-top: var(--sp-8); }
+.article-content { font-size: 1.0625rem; line-height: 1.75; }
+.article-content h2 {
+  margin-top: var(--sp-9);
+  position: relative;
+  scroll-margin-top: 90px;
+}
+.article-content h2::before {
+  /* Decorative ornament line — replaces the AI-default border-bottom. */
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--color-primary);
+  margin-bottom: var(--sp-4);
+  opacity: 0.4;
+}
 .article-content h2:first-child { margin-top: 0; }
-.article-content img { box-shadow: var(--shadow); }
+.article-content h2:first-child::before { display: none; }
 
 /* ============================================
    Tags
@@ -676,55 +751,70 @@ main { min-height: 70vh; }
 .copy-link-btn:hover { background: var(--color-primary-bg); color: var(--color-primary); border-color: var(--color-primary); }
 
 /* ============================================
-   Search modal
+   Search modal — native <dialog> element
    ============================================ */
 
 .search-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 100;
-  display: none;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 10vh;
-  backdrop-filter: blur(4px);
-}
-.search-modal[data-open="true"] { display: flex; }
-.search-modal-panel {
-  background: var(--color-bg-elev);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  width: min(600px, 90vw);
+  /* Native dialog resets. */
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  max-width: min(600px, 90vw);
+  width: 100%;
   max-height: 70vh;
+  margin: 10vh auto 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.search-modal::backdrop {
+  background: rgb(0 0 0 / 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.search-modal[open] {
+  animation: search-modal-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.search-modal[open]::backdrop {
+  animation: search-backdrop-in 200ms ease-out;
+}
+@keyframes search-modal-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes search-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.search-form {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  position: relative;
+  height: 100%;
+  max-height: 70vh;
+  background: var(--color-bg-elev);
+  margin: 0;
 }
 .search-modal-header {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3) var(--sp-1) var(--sp-4);
   border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
 }
 .search-modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: var(--sp-2);
   background: transparent;
   border: none;
   color: var(--color-text-soft);
   cursor: pointer;
   border-radius: var(--radius-sm);
+  padding: var(--sp-1);
   flex-shrink: 0;
 }
-.search-modal-close:hover { color: var(--color-primary); background: var(--color-bg-soft); }
-.search-modal-kbd {
+.search-modal-close:hover { color: var(--color-primary); }
+.search-modal-close kbd {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--color-text-muted);
@@ -732,12 +822,12 @@ main { min-height: 70vh; }
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 0.1em 0.4em;
-  margin-right: var(--sp-3);
-  flex-shrink: 0;
+  display: inline-block;
+  line-height: 1.2;
 }
 .search-input {
   flex: 1;
-  padding: var(--sp-4);
+  padding: var(--sp-4) 0;
   border: 0;
   background: transparent;
   color: var(--color-text);
@@ -755,11 +845,54 @@ main { min-height: 70vh; }
   border: none;
   text-decoration: none;
 }
-.search-result:hover, .search-result.active { background: var(--color-bg-soft); color: var(--color-text); border: none; }
-.search-result-title { font-weight: 600; display: block; }
-.search-result-meta { font-size: var(--fs-xs); color: var(--color-text-muted); margin-top: var(--sp-1); }
-.search-result-description { font-size: var(--fs-sm); color: var(--color-text-soft); margin-top: var(--sp-1); }
-.search-empty { padding: var(--sp-5); text-align: center; color: var(--color-text-muted); }
+.search-result:hover, .search-result.active, .search-result[aria-selected="true"] {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+  border: none;
+}
+.search-result-title {
+  font-weight: 600;
+  display: block;
+  font-family: var(--font-serif);
+  font-size: var(--fs-md);
+  letter-spacing: -0.01em;
+}
+.search-result-meta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--sp-1);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+.search-result-description {
+  font-size: var(--fs-sm);
+  color: var(--color-text-soft);
+  margin-top: var(--sp-1);
+  line-height: 1.45;
+}
+.search-empty {
+  padding: var(--sp-7) var(--sp-5);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+.search-empty p { margin: 0 0 var(--sp-2); }
+.search-empty-hint { font-size: var(--fs-xs); color: var(--color-text-muted); }
+.search-empty kbd {
+  font-family: var(--font-mono);
+  font-size: 0.75em;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.4em;
+  margin: 0 0.1em;
+}
+
+@media (max-width: 768px) {
+  .search-modal { max-width: 100%; max-height: 100%; margin: 0; border-radius: 0; height: 100%; }
+  .search-form { max-height: 100%; height: 100%; }
+  .search-modal-close kbd { display: none; }
+}
 
 /* ============================================
    Graph view
@@ -812,15 +945,57 @@ main { min-height: 70vh; }
    Home page sections
    ============================================ */
 
+/* Hero — asymmetric, two-line display, single dominant idea.
+   NOT a centered SaaS hero with 4 buttons. */
 .hero {
-  padding: var(--sp-9) 0 var(--sp-7);
-  text-align: center;
+  padding: var(--sp-11) 0 var(--sp-9);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-5);
+  border-bottom: 1px solid var(--color-border-soft);
 }
-.hero h1 { font-size: var(--fs-5xl); margin: 0 0 var(--sp-3); }
-.hero p { font-size: var(--fs-lg); color: var(--color-text-soft); max-width: 600px; margin: 0 auto var(--sp-5); }
+.hero-eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-accent);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  text-transform: none;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--color-accent);
+}
+.hero h1 {
+  font-size: var(--fs-5xl);
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  max-width: 14ch;
+}
+.hero h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-primary);
+}
+.hero-lede {
+  font-size: var(--fs-lg);
+  color: var(--color-text-soft);
+  margin: 0;
+  max-width: 52ch;
+  font-family: var(--font-serif);
+  line-height: 1.5;
+}
 .hero-search {
-  max-width: 500px;
-  margin: 0 auto;
+  max-width: 480px;
+  margin: var(--sp-2) 0 0;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -829,18 +1004,19 @@ main { min-height: 70vh; }
   border-radius: var(--radius);
   padding: var(--sp-3) var(--sp-4);
   cursor: pointer;
-  font-size: var(--fs-md);
+  font-size: var(--fs-base);
   color: var(--color-text-muted);
   text-align: left;
   font-family: inherit;
   transition: all var(--transition);
 }
-.hero-search:hover { border-color: var(--color-primary); }
+.hero-search:hover { border-color: var(--color-primary); color: var(--color-text-soft); }
+.hero-search kbd { margin-left: auto; }
 
-.home-section { margin: var(--sp-9) 0; }
-.home-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-5); }
-.home-section h2 { font-size: var(--fs-2xl); margin: 0; padding: 0; border: none; }
-.home-section-link { font-size: var(--fs-sm); }
+.home-section { margin: var(--sp-10) 0; }
+.home-section-header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-5); flex-wrap: wrap; }
+.home-section h2 { font-size: var(--fs-2xl); margin: 0; padding: 0; border: none; letter-spacing: -0.02em; }
+.home-section-link { font-size: var(--fs-sm); white-space: nowrap; }
 
 /* ============================================
    Footer
@@ -1157,8 +1333,11 @@ main { min-height: 70vh; }
 .reading-progress-fill {
   height: 100%;
   background: var(--color-primary);
-  width: 0;
-  transition: width 0.1s linear;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  /* width: 0 to scaleX(0) is paint-only — no layout thrash */
+  will-change: transform;
 }
 
 /* ============================================
@@ -1263,16 +1442,25 @@ main { min-height: 70vh; }
 .recent-content { flex: 1; min-width: 0; }
 .recent-title { font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-md); }
 .recent-action {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
   font-size: var(--fs-xs);
-  padding: 0.1rem 0.4rem;
-  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
   margin-left: var(--sp-2);
   vertical-align: middle;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
-.recent-action.new { background: var(--color-primary-bg); color: var(--color-primary); }
-.recent-action.update { background: #fdf3d1; color: #7a5a16; }
-:root[data-theme='dark'] .recent-action.update { background: #3a2f10; color: #e8c97a; }
+.recent-action::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.recent-action.update::before { background: var(--color-accent); }
 
 /* ============================================
    Footer with stats
@@ -1281,7 +1469,7 @@ main { min-height: 70vh; }
 .site-footer-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-5);
+  gap: var(--sp-6);
   padding: var(--sp-5) 0;
   border-top: 1px solid var(--color-border-soft);
   border-bottom: 1px solid var(--color-border-soft);
@@ -1289,7 +1477,30 @@ main { min-height: 70vh; }
   font-size: var(--fs-sm);
   color: var(--color-text-soft);
 }
-.site-footer-stat strong { color: var(--color-primary); font-family: var(--font-serif); font-size: var(--fs-md); display: block; }
+.site-footer-stat strong {
+  color: var(--color-primary);
+  font-family: var(--font-serif);
+  font-size: var(--fs-lg);
+  display: block;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.site-footer-stat span {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.site-footer-tagline {
+  font-size: var(--fs-sm);
+  color: var(--color-text-soft);
+  max-width: 60ch;
+  line-height: 1.5;
+}
+.site-footer-tagline strong { color: var(--color-text); font-family: var(--font-serif); }
+.site-footer-links { font-size: var(--fs-sm); }
+.site-footer-meta { font-size: var(--fs-xs); color: var(--color-text-muted); margin-top: var(--sp-4); }
 
 /* ============================================
    Better blockquote for "lorem ipsum" style
@@ -1298,12 +1509,25 @@ main { min-height: 70vh; }
 .article-content blockquote {
   margin: var(--sp-6) 0;
   padding: var(--sp-4) var(--sp-5);
-  border-left: 3px solid var(--color-primary);
   background: var(--color-bg-soft);
   color: var(--color-text-soft);
   font-style: italic;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
+  position: relative;
 }
+.article-content blockquote::before {
+  content: '\201C';
+  position: absolute;
+  top: -0.3em;
+  left: var(--sp-3);
+  font-size: 3em;
+  line-height: 1;
+  color: var(--color-primary);
+  opacity: 0.35;
+  font-family: var(--font-serif);
+  pointer-events: none;
+}
+.article-content blockquote p { position: relative; }
 .article-content blockquote p:last-child { margin-bottom: 0; }
 .article-content blockquote strong { color: var(--color-text); font-style: normal; }
 
@@ -1319,14 +1543,15 @@ main { min-height: 70vh; }
 }
 .article-title-text { flex: 1; min-width: 0; }
 .article-summary {
-  background: var(--color-bg-soft);
-  border-left: 3px solid var(--color-primary);
-  padding: var(--sp-3) var(--sp-4);
+  background: transparent;
+  padding: var(--sp-3) 0;
   margin: var(--sp-4) 0;
   font-family: var(--font-serif);
   font-style: italic;
+  font-size: var(--fs-lg);
   color: var(--color-text-soft);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 .article-pronunciation {
   font-family: var(--font-serif);
@@ -1464,9 +1689,9 @@ main { min-height: 70vh; }
   .home-section { margin: var(--sp-7) 0; }
   .home-section h2 { font-size: var(--fs-xl); }
 
-  /* Tag list */
+  /* Tag list — keep min 16px on interactive tag controls (a11y) */
   .tag-list { gap: var(--sp-1); }
-  .tag { font-size: 0.7rem; padding: 0.15rem 0.4rem; }
+  .tag { font-size: 0.85rem; padding: 0.3rem 0.5rem; }
 
   /* A-Z index */
   .az-jump { gap: 0; }
@@ -1514,8 +1739,8 @@ main { min-height: 70vh; }
   .graph-legend-item { font-size: 0.65rem; }
   .graph-legend-dot { width: 8px; height: 8px; }
 
-  /* Back to top — slightly smaller and out of the way */
-  .back-to-top { width: 40px; height: 40px; bottom: var(--sp-4); right: var(--sp-4); }
+  /* Back to top — 44px minimum touch target */
+  .back-to-top { width: 44px; height: 44px; bottom: var(--sp-4); right: var(--sp-4); }
 
   /* Timeline */
   .timeline { padding-left: var(--sp-4); }

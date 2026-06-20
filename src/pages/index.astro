@@ -4,13 +4,17 @@ import { getAllEntries, getRecentEntries, getAllCategories, getAllTags, getEntry
 import { formatDate } from '../utils/format';
 
 const recent = await getRecentEntries(6);
-const featured = recent.slice(0, 3);
-const newNotes = recent.slice(3);
+const all = await getAllEntries();
 const categories = await getAllCategories();
 const tags = await getAllTags();
-const all = await getAllEntries();
 
-// Popular: most-connected entries (by inbound related count) — simple heuristic
+// Featured = articles explicitly marked quality:featured
+const featured = all.filter(({ entry }) => entry.data.quality === 'featured').slice(0, 3);
+
+// Latest 3 non-featured updates for the secondary row
+const updates = recent.filter(({ entry }) => entry.data.quality !== 'featured').slice(0, 4);
+
+// Popular: most-connected articles (heuristic on inbound related)
 const inboundCount = new Map<string, number>();
 for (const { collection: sc, entry: se } of all) {
   for (const rel of se.data.related ?? []) {
@@ -27,91 +31,85 @@ const popular = [...inboundCount.entries()]
   .slice(0, 6)
   .map(([key]) => all.find(({ collection, entry }) => `${collection}/${entry.id}` === key))
   .filter(Boolean);
-
-// Featured articles (marked with quality: featured) — top priority
-const featuredByQuality = all.filter(({ entry }) => entry.data.quality === 'featured').slice(0, 3);
-const heroArticles = featuredByQuality.length > 0 ? featuredByQuality : featured;
-
-// Find a real article that links to "the wiki" as a portal quote
-const portalArticle = all.find(({ collection, entry }) => entry.id === 'large-language-model') ?? heroArticles[0];
 ---
 
 <BaseLayout title="LLM Wiki" description="A personal knowledge base — articles, concepts, research, and digital gardening.">
   <div class="container">
-    <section class="hero">
-      <h1>LLM Wiki</h1>
-      <p class="text-soft" style="font-style: italic; font-family: var(--font-serif); font-size: var(--fs-md); color: var(--color-text-muted); max-width: 500px; margin: 0 auto var(--sp-5); letter-spacing: 0.04em;">
-        ~ a personal compendium ~
-      </p>
-      <p>A personal knowledge base — articles, concepts, research, projects, books, and the connections between them. A digital garden, growing.</p>
-      <button class="hero-search" data-search-open type="button">
+
+    <!-- HERO: asymmetric, single idea, no SaaS button-row -->
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="hero-eyebrow">A digital garden in progress</p>
+      <h1 id="hero-title">A small <em>compendium</em> of things worth knowing.</h1>
+      <p class="hero-lede">Articles, concepts, research notes, and the quiet connections between them — written and tended over time. Built as a personal wiki, kept as a reference book.</p>
+      <button class="hero-search" data-search-open type="button" aria-label="Open search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        Search the wiki...
-        <kbd style="margin-left: auto;">⌘K</kbd>
+        <span>Search {all.length} articles, {tags.length} tags…</span>
+        <kbd>⌘ K</kbd>
       </button>
-      <div class="hero-actions" style="margin-top: var(--sp-4); display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap;">
-        <a class="hero-btn" href="/articles">Browse all</a>
-        <a class="hero-btn hero-btn-secondary" href="/az">A–Z index</a>
-        <a class="hero-btn hero-btn-secondary" href="/graph">Graph view</a>
-        <a class="hero-btn hero-btn-secondary" href="/random">Random article</a>
-      </div>
     </section>
 
-    <section class="home-section portal-stats">
-      <div class="portal-stat">
-        <strong>{all.length}</strong>
-        <span>articles</span>
-      </div>
-      <div class="portal-stat">
-        <strong>{categories.length}</strong>
-        <span>categories</span>
-      </div>
-      <div class="portal-stat">
-        <strong>{tags.length}</strong>
-        <span>tags</span>
-      </div>
-      <div class="portal-stat">
-        <strong>9</strong>
-        <span>collections</span>
-      </div>
-    </section>
-
-    {heroArticles.length > 0 && (
-      <section class="home-section">
+    {featured.length > 0 && (
+      <section class="home-section" aria-labelledby="featured-title">
         <div class="home-section-header">
-          <h2>Featured</h2>
+          <h2 id="featured-title">Featured</h2>
           <a href="/articles" class="home-section-link">All articles →</a>
         </div>
-        <div class="card-grid">
-          {heroArticles.map(({ collection, entry }) => (
-            <a class="card" href={getEntryUrl(collection, entry.id)}>
-              {entry.data.quality === 'featured' && <span class="card-badge">★ Featured</span>}
-              <h3 class="card-title">{entry.data.title}</h3>
-              {entry.data.description && <p class="card-description">{entry.data.description}</p>}
-              <div class="card-meta">
-                <span>{collection}</span>
-                <span>·</span>
-                <span>{formatDate(entry.data.date)}</span>
-              </div>
+        <div class="featured-list">
+          {featured.map(({ collection, entry }, i) => (
+            <a class="featured-item" href={getEntryUrl(collection, entry.id)}>
+              <span class="featured-index">{String(i + 1).padStart(2, '0')}</span>
+              <span class="featured-body">
+                <span class="featured-title">{entry.data.title}</span>
+                {entry.data.description && <span class="featured-description">{entry.data.description}</span>}
+                <span class="featured-meta">
+                  {collection} · {formatDate(entry.data.updated ?? entry.data.date)}
+                </span>
+              </span>
             </a>
           ))}
         </div>
       </section>
     )}
 
-    {newNotes.length > 0 && (
-      <section class="home-section">
+    {updates.length > 0 && (
+      <section class="home-section" aria-labelledby="recent-title">
         <div class="home-section-header">
-          <h2>Recent updates</h2>
-          <a href="/recent" class="home-section-link">What's new →</a>
+          <h2 id="recent-title">Recent</h2>
+          <a href="/recent" class="home-section-link">All changes →</a>
         </div>
-        <div>
-          {newNotes.map(({ collection, entry }) => (
-            <a class="list-item" href={getEntryUrl(collection, entry.id)}>
-              <span class="list-item-title">{entry.data.title}</span>
-              {entry.data.description && <span class="list-item-description">{entry.data.description}</span>}
-              <span class="list-item-meta">
-                {collection} · updated {formatDate(entry.data.updated ?? entry.data.date)}
+        <div class="featured-list">
+          {updates.map(({ collection, entry }, i) => (
+            <a class="featured-item" href={getEntryUrl(collection, entry.id)}>
+              <span class="featured-index">{String(i + 1).padStart(2, '0')}</span>
+              <span class="featured-body">
+                <span class="featured-title">{entry.data.title}</span>
+                {entry.data.description && <span class="featured-description">{entry.data.description}</span>}
+                <span class="featured-meta">
+                  {collection} · {formatDate(entry.data.updated ?? entry.data.date)}
+                </span>
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {popular.length > 0 && (
+      <section class="home-section" aria-labelledby="popular-title">
+        <div class="home-section-header">
+          <h2 id="popular-title">Most connected</h2>
+          <a href="/graph" class="home-section-link">View graph →</a>
+        </div>
+        <div class="featured-list">
+          {popular.map((p, i) => p && (
+            <a class="featured-item" href={getEntryUrl(p.collection, p.entry.id)}>
+              <span class="featured-index">{String(i + 1).padStart(2, '0')}</span>
+              <span class="featured-body">
+                <span class="featured-title">{p.entry.data.title}</span>
+                {p.entry.data.description && <span class="featured-description">{p.entry.data.description}</span>}
+                <span class="featured-meta">
+                  {p.collection} · {inboundCount.get(`${p.collection}/${p.entry.id}`) ?? 0} inbound links
+                </span>
               </span>
             </a>
           ))}
@@ -120,48 +118,26 @@ const portalArticle = all.find(({ collection, entry }) => entry.id === 'large-la
     )}
 
     {categories.length > 0 && (
-      <section class="home-section">
+      <section class="home-section" aria-labelledby="cats-title">
         <div class="home-section-header">
-          <h2>Browse by category</h2>
-          <a href="/articles" class="home-section-link">All categories →</a>
+          <h2 id="cats-title">Browse by category</h2>
         </div>
         <div class="tag-list">
           {categories.map(c => (
-            <a class="tag" href={`/category/${c.category}`}>{c.category} ({c.count})</a>
-          ))}
-        </div>
-      </section>
-    )}
-
-    {popular.length > 0 && (
-      <section class="home-section">
-        <div class="home-section-header">
-          <h2>Popular</h2>
-        </div>
-        <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
-          {popular.map((p) => p && (
-            <a class="card" href={getEntryUrl(p.collection, p.entry.id)}>
-              <h3 class="card-title">{p.entry.data.title}</h3>
-              {p.entry.data.description && <p class="card-description">{p.entry.data.description}</p>}
-              <div class="card-meta">
-                <span>{p.collection}</span>
-              </div>
-            </a>
+            <a class="tag" href={`/category/${c.category}`}>{c.category} <span class="tag-count">{c.count}</span></a>
           ))}
         </div>
       </section>
     )}
 
     {tags.length > 0 && (
-      <section class="home-section">
+      <section class="home-section" aria-labelledby="tags-title">
         <div class="home-section-header">
-          <h2>Tags</h2>
-          <div>
-            <a href="/articles" class="home-section-link">All articles →</a>
-          </div>
+          <h2 id="tags-title">Tags</h2>
+          <a href="/articles" class="home-section-link">Browse all →</a>
         </div>
-        <div class="tag-list">
-          {tags.map(t => <a class="tag" href={`/tag/${t.tag}`}>#{t.tag} ({t.count})</a>)}
+        <div class="tag-list tag-list-cloud">
+          {tags.map(t => <a class="tag" href={`/tag/${t.tag}`}>#{t.tag} <span class="tag-count">{t.count}</span></a>)}
         </div>
       </section>
     )}
@@ -169,59 +145,66 @@ const portalArticle = all.find(({ collection, entry }) => entry.id === 'large-la
 </BaseLayout>
 
 <style>
-  .hero-actions { margin-top: var(--sp-4); }
-  .hero-btn {
-    display: inline-block;
-    padding: var(--sp-2) var(--sp-4);
-    background: var(--color-primary);
-    color: var(--color-bg);
-    border-radius: var(--radius);
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    border: 1px solid var(--color-primary);
+  /* Asymmetric featured list — no card grid, just editorial rows. */
+  .featured-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-border);
   }
-  .hero-btn:hover { background: var(--color-primary-soft); color: var(--color-bg); border-color: var(--color-primary-soft); }
-  .hero-btn-secondary { background: transparent; color: var(--color-primary); }
-  .hero-btn-secondary:hover { background: var(--color-primary-bg); color: var(--color-primary); }
-
-  .portal-stats {
+  .featured-item {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: 64px 1fr;
     gap: var(--sp-4);
     padding: var(--sp-5) 0;
-    border-top: 1px solid var(--color-border-soft);
-    border-bottom: 1px solid var(--color-border-soft);
-    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    text-decoration: none;
+    align-items: baseline;
+    transition: background var(--transition);
   }
-  .portal-stat strong {
-    display: block;
-    font-family: var(--font-serif);
-    font-size: var(--fs-3xl);
-    color: var(--color-primary);
-    font-weight: 700;
+  .featured-item:hover {
+    background: var(--color-bg-soft);
+    color: var(--color-text);
   }
-  .portal-stat span {
-    display: block;
+  .featured-item:hover .featured-title { color: var(--color-primary); }
+  .featured-index {
+    font-family: var(--font-mono);
     font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    letter-spacing: 0.04em;
+  }
+  .featured-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+  }
+  .featured-title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+  }
+  .featured-description {
+    font-size: var(--fs-base);
+    color: var(--color-text-soft);
+    line-height: 1.5;
+  }
+  .featured-meta {
+    font-size: var(--fs-xs);
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-top: var(--sp-1);
   }
 
-  .card-badge {
-    display: inline-block;
-    font-size: var(--fs-xs);
-    background: #fdf3d1;
-    color: #7a5a16;
-    border: 1px solid #e8c97a;
-    padding: 0.1rem 0.4rem;
-    border-radius: var(--radius-sm);
-    margin-bottom: var(--sp-2);
-    font-weight: 600;
-    font-family: var(--font-sans);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .tag-count {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-left: 0.3em;
+    font-size: 0.85em;
   }
-  :root[data-theme='dark'] .card-badge { background: #3a2f10; color: #e8c97a; border-color: #7a5a16; }
+  .tag-list-cloud .tag {
+    font-weight: 400;
+  }
 </style>

@@ -40,6 +40,14 @@ const totalArticles = allEntries.length;
   <link rel="alternate" type="application/rss+xml" title="LLM Wiki" href="/rss.xml" />
   <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
 
+  <!-- Fonts: Spectral (display) + Inter (UI). Preconnect for faster FCP. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap"
+  />
+
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content={fullTitle} />

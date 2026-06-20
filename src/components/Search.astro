@@ -1,86 +1,116 @@
 ---
-// Search modal. Fuse.js loaded dynamically. Index fetched on first open.
+/**
+ * Search modal. Uses native <dialog> for focus trap, escape handling,
+ * light-dismiss, and proper a11y. Fuse.js loaded on first open.
+ */
 ---
 
-<div class="search-modal" data-search-modal role="dialog" aria-modal="true" aria-label="Search">
-  <div class="search-modal-panel">
+<dialog class="search-modal" data-search-modal aria-label="Search the wiki">
+  <form class="search-form" method="dialog">
     <div class="search-modal-header">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
       <input
         type="search"
         class="search-input"
-        placeholder="Search articles, concepts, tags..."
+        placeholder="Search articles, concepts, tags…"
         data-search-input
         autocomplete="off"
         spellcheck="false"
+        inputmode="search"
+        aria-label="Search query"
       />
-      <button class="search-modal-close" data-search-close type="button" aria-label="Close search" title="Close (Esc)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
+      <button class="search-modal-close" type="button" data-search-close aria-label="Close search">
+        <kbd>esc</kbd>
       </button>
-      <kbd class="search-modal-kbd">esc</kbd>
     </div>
-    <div class="search-results" data-search-results>
-      <div class="search-empty">Type to search the knowledge base.</div>
+    <div class="search-results" data-search-results role="listbox" aria-label="Search results">
+      <div class="search-empty">
+        <p>Type at least 2 characters to search.</p>
+        <p class="search-empty-hint">Press <kbd>↑</kbd> <kbd>↓</kbd> to navigate, <kbd>↵</kbd> to open, <kbd>esc</kbd> to close.</p>
+      </div>
     </div>
-  </div>
-</div>
+  </form>
+</dialog>
 
 <script>
-  // Search modal behavior. Fuse.js loaded on first open (lightweight + cached by browser).
   import Fuse from 'fuse.js';
 
-  const modal = document.querySelector<HTMLElement>('[data-search-modal]');
+  const dialog = document.querySelector<HTMLDialogElement>('[data-search-modal]');
   const input = document.querySelector<HTMLInputElement>('[data-search-input]');
   const results = document.querySelector<HTMLElement>('[data-search-results]');
   const openers = document.querySelectorAll<HTMLElement>('[data-search-open]');
   const closers = document.querySelectorAll<HTMLElement>('[data-search-close]');
+  const main = document.querySelector<HTMLElement>('main');
+
   let fuse: Fuse<any> | null = null;
   let idx: any[] = [];
   let selectedIdx = 0;
   let visibleResults: any[] = [];
+  let lastFocus: HTMLElement | null = null;
 
   async function loadIndex() {
     if (fuse) return;
-    const res = await fetch('/search-index.json');
-    idx = await res.json();
-    fuse = new Fuse(idx, {
-      keys: [
-        { name: 'title', weight: 0.5 },
-        { name: 'description', weight: 0.25 },
-        { name: 'tags', weight: 0.15 },
-        { name: 'body', weight: 0.1 },
-      ],
-      threshold: 0.35,
-      includeMatches: true,
-      minMatchCharLength: 2,
-    });
+    try {
+      const res = await fetch('/search-index.json');
+      idx = await res.json();
+      fuse = new Fuse(idx, {
+        keys: [
+          { name: 'title', weight: 0.5 },
+          { name: 'aliases', weight: 0.2 },
+          { name: 'description', weight: 0.15 },
+          { name: 'tags', weight: 0.1 },
+          { name: 'body', weight: 0.05 },
+        ],
+        threshold: 0.35,
+        minMatchCharLength: 2,
+      });
+    } catch (err) {
+      console.error('Search index failed to load', err);
+    }
   }
 
   function open() {
-    if (!modal || !input) return;
-    modal.setAttribute('data-open', 'true');
+    if (!dialog || !input) return;
+    lastFocus = document.activeElement as HTMLElement;
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute('open', '');
+    }
+    main?.setAttribute('inert', '');
     document.body.style.overflow = 'hidden';
     loadIndex();
-    setTimeout(() => input.focus(), 50);
+    requestAnimationFrame(() => input.focus());
   }
 
   function close() {
-    if (!modal || !input) return;
-    modal.setAttribute('data-open', 'false');
+    if (!dialog || !input) return;
+    if (typeof dialog.close === 'function') dialog.close();
+    else dialog.removeAttribute('open');
+    main?.removeAttribute('inert');
     document.body.style.overflow = '';
     input.value = '';
     renderResults([]);
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
   }
 
   function renderResults(matches: any[]) {
     if (!results) return;
     if (matches.length === 0) {
-      if (input && input.value) {
-        results.innerHTML = '<div class="search-empty">No results.</div>';
+      if (input && input.value && input.value.length >= 2) {
+        results.innerHTML = '<div class="search-empty"><p>No matches for <q></q>.</p><p class="search-empty-hint">Try a different keyword, or browse the <a href="/az">A–Z index</a>.</p></div>';
+        const q = results.querySelector('q');
+        if (q) q.textContent = input.value;
       } else {
-        results.innerHTML = '<div class="search-empty">Type to search the knowledge base.</div>';
+        results.innerHTML = `
+          <div class="search-empty">
+            <p>Type at least 2 characters to search.</p>
+            <p class="search-empty-hint">Press <kbd>↑</kbd> <kbd>↓</kbd> to navigate, <kbd>↵</kbd> to open, <kbd>esc</kbd> to close.</p>
+          </div>
+        `;
       }
       visibleResults = [];
       return;
@@ -88,9 +118,9 @@
     visibleResults = matches;
     selectedIdx = 0;
     results.innerHTML = matches.slice(0, 20).map((m, i) => `
-      <a class="search-result ${i === 0 ? 'active' : ''}" href="${m.item.url}" data-idx="${i}">
+      <a class="search-result ${i === 0 ? 'active' : ''}" href="${m.item.url}" data-idx="${i}" role="option" aria-selected="${i === 0}">
         <span class="search-result-title">${escapeHtml(m.item.title)}</span>
-        <span class="search-result-meta">${m.item.collection} · ${m.item.category}${m.item.tags.length ? ' · ' + m.item.tags.slice(0, 3).map((t: string) => '#' + t).join(' ') : ''}</span>
+        <span class="search-result-meta">${m.item.collection} · ${m.item.category || 'uncategorized'}${m.item.tags?.length ? ' · ' + m.item.tags.slice(0, 3).map((t: string) => '#' + t).join(' ') : ''}</span>
         ${m.item.description ? `<span class="search-result-description">${escapeHtml(m.item.description)}</span>` : ''}
       </a>
     `).join('');
@@ -100,33 +130,47 @@
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]!);
   }
 
-  openers.forEach((o) => o.addEventListener('click', open));
-  closers.forEach((c) => c.addEventListener('click', close));
-  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  openers.forEach((o) => o.addEventListener('click', (e) => { e.preventDefault(); open(); }));
+  closers.forEach((c) => c.addEventListener('click', (e) => { e.preventDefault(); close(); }));
+
+  // Light-dismiss: click on backdrop closes (the dialog itself, not its content).
+  if (dialog) {
+    dialog.addEventListener('click', (e) => {
+      // If the click is on the dialog element (which stretches to the full viewport
+      // when opened via showModal), close. But clicks on form/content should NOT close.
+      const rect = (dialog.querySelector('.search-form') as HTMLElement)?.getBoundingClientRect();
+      if (rect && (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom)) {
+        close();
+      }
+    });
+    // Native dialog: 'cancel' fires on Esc; close our state too.
+    dialog.addEventListener('close', () => {
+      main?.removeAttribute('inert');
+      document.body.style.overflow = '';
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      if (modal?.getAttribute('data-open') === 'true') close();
+      if (dialog?.open) close();
       else open();
+      return;
     }
-    if (e.key === 'Escape' && modal?.getAttribute('data-open') === 'true') {
-      close();
+    if (!dialog?.open) return;
+    if (e.key === 'ArrowDown' && visibleResults.length > 0) {
+      e.preventDefault();
+      selectedIdx = Math.min(selectedIdx + 1, visibleResults.length - 1);
+      updateSelection();
     }
-    if (modal?.getAttribute('data-open') === 'true') {
-      if (e.key === 'ArrowDown' && visibleResults.length > 0) {
-        e.preventDefault();
-        selectedIdx = Math.min(selectedIdx + 1, visibleResults.length - 1);
-        updateSelection();
-      }
-      if (e.key === 'ArrowUp' && visibleResults.length > 0) {
-        e.preventDefault();
-        selectedIdx = Math.max(selectedIdx - 1, 0);
-        updateSelection();
-      }
-      if (e.key === 'Enter' && visibleResults[selectedIdx]) {
-        window.location.href = visibleResults[selectedIdx].item.url;
-      }
+    if (e.key === 'ArrowUp' && visibleResults.length > 0) {
+      e.preventDefault();
+      selectedIdx = Math.max(selectedIdx - 1, 0);
+      updateSelection();
+    }
+    if (e.key === 'Enter' && visibleResults[selectedIdx]) {
+      e.preventDefault();
+      window.location.href = visibleResults[selectedIdx].item.url;
     }
   });
 
@@ -134,8 +178,10 @@
     if (!results) return;
     const items = results.querySelectorAll('.search-result');
     items.forEach((el, i) => {
-      el.classList.toggle('active', i === selectedIdx);
-      if (i === selectedIdx) el.scrollIntoView({ block: 'nearest' });
+      const active = i === selectedIdx;
+      el.classList.toggle('active', active);
+      el.setAttribute('aria-selected', active ? 'true' : 'false');
+      if (active) (el as HTMLElement).scrollIntoView({ block: 'nearest' });
     });
   }
 
@@ -144,7 +190,7 @@
       await loadIndex();
       if (!fuse) return;
       const q = input.value.trim();
-      if (!q) { renderResults([]); return; }
+      if (q.length < 2) { renderResults([]); return; }
       const matches = fuse.search(q, { limit: 20 });
       renderResults(matches);
     });

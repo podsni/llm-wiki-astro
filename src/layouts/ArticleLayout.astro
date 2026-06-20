@@ -37,10 +37,15 @@ const hasInfobox = (entry.data.infobox && entry.data.infobox.length > 0) || entr
     <article class="article-main">
       <Breadcrumb collection={collection} collectionLabel={collectionLabel} title={entry.data.title} />
       <header class="article-header">
-        <span class="category-chip">{collectionLabel}</span>
+        <div class="article-meta-line">
+          <span class="article-collection">{collectionLabel}</span>
+          <span class="article-meta-dot" aria-hidden="true">·</span>
+          <span class="article-meta-quality">
+            <QualityBadge status={entry.data.quality} />
+          </span>
+        </div>
         <h1 class="article-title">
           <span class="article-title-text">{entry.data.title}</span>
-          <QualityBadge status={entry.data.quality} />
         </h1>
         {entry.data.pronunciation && (
           <p class="article-pronunciation">/{entry.data.pronunciation}/</p>
@@ -55,7 +60,7 @@ const hasInfobox = (entry.data.infobox && entry.data.infobox.length > 0) || entr
             ))}
           </div>
         )}
-        <div style="margin-top: var(--sp-3); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap;">
+        <div class="article-actions">
           <CopyLink url={url} />
           <a class="print-action" href={`/print/${collection}/${entry.id}`} title="Print this article">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

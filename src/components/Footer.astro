@@ -6,9 +6,11 @@ interface Props {
 }
 const { totalArticles = 0 } = Astro.props;
 const year = new Date().getFullYear();
-
-// Last build time (used as "last updated")
-const lastUpdated = new Date().toISOString().split('T')[0];
+const buildDate = new Date().toISOString().split('T')[0];
+const totalTags = (await getAllEntries()).reduce((set, e) => {
+  for (const t of e.entry.data.tags) set.add(t);
+  return set;
+}, new Set<string>()).size;
 ---
 
 <footer class="site-footer">
@@ -19,22 +21,25 @@ const lastUpdated = new Date().toISOString().split('T')[0];
         <span>articles</span>
       </div>
       <div class="site-footer-stat">
+        <strong>{totalTags}</strong>
+        <span>tags</span>
+      </div>
+      <div class="site-footer-stat">
         <strong>CC BY-SA 4.0</strong>
         <span>license</span>
       </div>
       <div class="site-footer-stat">
-        <strong>{lastUpdated}</strong>
+        <strong>{buildDate}</strong>
         <span>last build</span>
       </div>
     </div>
-    <div>
-      <strong>LLM Wiki</strong> — a personal knowledge base. Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>. Inspired by the digital garden tradition.
+    <div class="site-footer-tagline">
+      <strong>LLM Wiki</strong> — a personal knowledge base. Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>. Inspired by <a href="https://tolkiengateway.net" target="_blank" rel="noopener">Tolkien Gateway</a> and the digital garden tradition.
     </div>
-    <div>
+    <div class="site-footer-links">
       <a href="/rss.xml">RSS</a> · <a href="/sitemap-index.xml">Sitemap</a> · <a href="/about">About</a> · <a href="/az">A–Z</a> · <a href="/random">Random</a>
     </div>
-    <div>
-      © {year}
-    </div>
+    <div class="site-footer-meta">© {year}</div>
   </div>
 </footer>
+

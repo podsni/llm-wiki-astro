@@ -7,8 +7,8 @@ const isActive = (p: string) => path === p || (p !== '/' && path.startsWith(p));
 
 <header class="site-header">
   <div class="site-header-inner">
-    <button class="hamburger" data-mobile-sidebar-open type="button" aria-label="Open menu" title="Menu">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button class="hamburger" data-mobile-sidebar-open type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-sidebar" title="Menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <line x1="3" y1="6" x2="21" y2="6"/>
         <line x1="3" y1="12" x2="21" y2="12"/>
         <line x1="3" y1="18" x2="21" y2="18"/>
@@ -29,13 +29,13 @@ const isActive = (p: string) => path === p || (p !== '/' && path.startsWith(p));
     </nav>
 
     <div class="site-actions">
-      <button class="site-search-trigger" data-search-open type="button" aria-label="Search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <button class="site-search-trigger" data-search-open type="button" aria-label="Open search (press ⌘K)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
         <span>Search</span>
         <kbd>⌘K</kbd>
       </button>
       <button class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
-        <svg class="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       </button>
     </div>
   </div>
