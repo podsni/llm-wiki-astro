@@ -4,14 +4,23 @@
 
 <div class="search-modal" data-search-modal role="dialog" aria-modal="true" aria-label="Search">
   <div class="search-modal-panel">
-    <input
-      type="search"
-      class="search-input"
-      placeholder="Search articles, concepts, tags..."
-      data-search-input
-      autocomplete="off"
-      spellcheck="false"
-    />
+    <div class="search-modal-header">
+      <input
+        type="search"
+        class="search-input"
+        placeholder="Search articles, concepts, tags..."
+        data-search-input
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="search-modal-close" data-search-close type="button" aria-label="Close search" title="Close (Esc)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <kbd class="search-modal-kbd">esc</kbd>
+    </div>
     <div class="search-results" data-search-results>
       <div class="search-empty">Type to search the knowledge base.</div>
     </div>
@@ -26,6 +35,7 @@
   const input = document.querySelector<HTMLInputElement>('[data-search-input]');
   const results = document.querySelector<HTMLElement>('[data-search-results]');
   const openers = document.querySelectorAll<HTMLElement>('[data-search-open]');
+  const closers = document.querySelectorAll<HTMLElement>('[data-search-close]');
   let fuse: Fuse<any> | null = null;
   let idx: any[] = [];
   let selectedIdx = 0;
@@ -91,6 +101,7 @@
   }
 
   openers.forEach((o) => o.addEventListener('click', open));
+  closers.forEach((c) => c.addEventListener('click', close));
   if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 
   document.addEventListener('keydown', (e) => {
