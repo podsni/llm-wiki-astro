@@ -487,3 +487,22 @@ Code: [MIT](LICENSE).
 - [Live demo](https://llm-wiki-5y3.pages.dev)
 - [Astro docs](https://docs.astro.build)
 - [Digital garden tradition](https://maggieappleton.com/garden)
+
+---
+
+## For AI coding agents
+
+**See [AGENT.md](./AGENT.md)** — it covers the architecture, content
+schema, common tasks, troubleshooting tips, and working agreements
+specific to this codebase. Read it before making non-trivial changes.
+
+Key things AGENT.md covers that aren't here:
+
+- How to add a new collection (vs. a new article)
+- The 9 content collections and when to use each
+- Design system tokens (colors, spacing, breakpoints, fonts)
+- Accessibility conventions (focus rings, touch targets, `<dialog>`)
+- Common build errors and their fixes
+- Performance budget (50KB JS, 2s build, 95+ Lighthouse)
+- Working agreements (no new deps without justification, no backend,
+  no CMS — content is in-repo MDX)
