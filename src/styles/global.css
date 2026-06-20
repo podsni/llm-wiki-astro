@@ -1766,13 +1766,14 @@ main { min-height: 70vh; }
   main { min-height: 60vh; }
 
   /* Header — hamburger visible, search/theme icon-only */
-  .hamburger { display: inline-flex; }
+  .hamburger { display: inline-flex; width: 44px; height: 44px; }
   .site-nav { display: none; }
   .site-search-trigger { min-width: 0; width: 44px; min-width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: var(--radius); }
   .site-search-trigger span, .site-search-trigger kbd { display: none; }
-  .site-header-inner { gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
+  .site-header-inner { gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); }
+  .site-actions { gap: var(--sp-3); }
   .theme-toggle { width: 44px; height: 44px; padding: 0; justify-content: center; }
-  .site-logo { font-size: var(--fs-md); gap: var(--sp-2); }
+  .site-logo { font-size: var(--fs-md); gap: var(--sp-3); }
   .site-logo-mark { width: 32px; height: 32px; line-height: 32px; font-size: 1rem; }
 
   /* Article layout — single column */
@@ -1940,6 +1941,12 @@ main { min-height: 70vh; }
   .card-title { font-size: var(--fs-sm); }
   .hero h1 { font-size: var(--fs-xl); }
   .article-title { font-size: var(--fs-2xl); }
+}
+
+/* Ultra-narrow (≤340px) — hide wordmark text, keep L mark only */
+@media (max-width: 340px) {
+  .site-logo > span:last-child { display: none; }
+  .site-header-inner { gap: var(--sp-2); }
 }
 
 /* iOS safe area insets for notched phones (iPhone X+) */
