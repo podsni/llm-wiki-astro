@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Page not found" description="The page you're looking for doesn't exist." noindex>
+  <div class="container-narrow" style="text-align: center; padding: var(--sp-9) var(--sp-5);">
+    <h1 style="font-size: var(--fs-5xl); margin-bottom: var(--sp-3);">404</h1>
+    <p class="article-description" style="font-size: var(--fs-xl); margin-bottom: var(--sp-5);">
+      This page has not been written yet — or has been moved, retired, or never existed.
+    </p>
+    <p class="text-soft" style="margin-bottom: var(--sp-6);">
+      In a wiki, that often means it's a placeholder for a future article, or a link from a page that was never created. Try the <a href="/">homepage</a>, the <a href="/graph">graph</a>, or <a href="#" onclick="document.querySelector('[data-search-open]')?.click(); return false;">search</a>.
+    </p>
+    <div style="display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap;">
+      <a class="tag" href="/">← Home</a>
+      <a class="tag" href="/articles">All articles</a>
+      <a class="tag" href="/graph">Graph view</a>
+      <a class="tag" href="/archive">Archive</a>
+    </div>
+  </div>
+</BaseLayout>

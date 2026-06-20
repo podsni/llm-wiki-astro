@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllEntries, getEntryUrl } from '../utils/content';
+import { formatDate } from '../utils/format';
+
+// Timeline includes the timeline collection + any entry with eventDate fallback to date
+const all = await getAllEntries();
+all.sort((a, b) => {
+  const ad = a.entry.data.eventDate ?? a.entry.data.date;
+  const bd = b.entry.data.eventDate ?? b.entry.data.date;
+  return new Date(bd).valueOf() - new Date(ad).valueOf();
+});
+
+// Group by year
+const byYear = new Map<string, typeof all>();
+for (const item of all) {
+  const year = new Date(item.entry.data.eventDate ?? item.entry.data.date).getFullYear().toString();
+  const list = byYear.get(year) ?? [];
+  list.push(item);
+  byYear.set(year, list);
+}
+const years = [...byYear.keys()].sort((a, b) => Number(b) - Number(a));
+---
+
+<BaseLayout title="Timeline" description="Chronological view of articles, events, milestones, and updates.">
+  <div class="container-narrow">
+    <header class="article-header" style="margin-top: var(--sp-6);">
+      <span class="category-chip">Timeline</span>
+      <h1 style="margin-top: 0;">Timeline</h1>
+      <p class="article-description">Articles, events, and milestones in chronological order.</p>
+    </header>
+
+    {years.map((year) => (
+      <section>
+        <h2 class="archive-year">{year}</h2>
+        <div class="timeline">
+          {byYear.get(year)!.map(({ collection, entry }) => (
+            <div class="timeline-event">
+              <h3>
+                <a href={getEntryUrl(collection, entry.id)} style="border: none; color: var(--color-text);">
+                  {entry.data.title}
+                </a>
+              </h3>
+              <div class="date">{formatDate(entry.data.eventDate ?? entry.data.date)}</div>
+              {entry.data.description && <div class="description">{entry.data.description}</div>}
+              <div style="margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--color-text-muted);">
+                {collection}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</BaseLayout>

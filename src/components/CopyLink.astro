@@ -1,0 +1,33 @@
+---
+interface Props {
+  url: string;
+}
+
+const { url } = Astro.props;
+const fullUrl = new URL(url, Astro.site ?? 'https://llm-wiki.pages.dev').toString();
+---
+
+<button class="copy-link-btn" data-copy-url={fullUrl} type="button" title="Copy link to this article">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  <span>Copy link</span>
+</button>
+
+<script>
+  document.querySelectorAll('.copy-link-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const url = (btn as HTMLElement).dataset.copyUrl;
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        const span = btn.querySelector('span');
+        const original = span?.textContent;
+        if (span) {
+          span.textContent = 'Copied!';
+          setTimeout(() => { if (span) span.textContent = original; }, 1500);
+        }
+      } catch (e) {
+        console.error('Copy failed', e);
+      }
+    });
+  });
+</script>

@@ -1,0 +1,141 @@
+---
+// Search modal. Fuse.js loaded dynamically. Index fetched on first open.
+---
+
+<div class="search-modal" data-search-modal role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-modal-panel">
+    <input
+      type="search"
+      class="search-input"
+      placeholder="Search articles, concepts, tags..."
+      data-search-input
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <div class="search-results" data-search-results>
+      <div class="search-empty">Type to search the knowledge base.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Search modal behavior. Fuse.js loaded on first open (lightweight + cached by browser).
+  import Fuse from 'fuse.js';
+
+  const modal = document.querySelector<HTMLElement>('[data-search-modal]');
+  const input = document.querySelector<HTMLInputElement>('[data-search-input]');
+  const results = document.querySelector<HTMLElement>('[data-search-results]');
+  const openers = document.querySelectorAll<HTMLElement>('[data-search-open]');
+  let fuse: Fuse<any> | null = null;
+  let idx: any[] = [];
+  let selectedIdx = 0;
+  let visibleResults: any[] = [];
+
+  async function loadIndex() {
+    if (fuse) return;
+    const res = await fetch('/search-index.json');
+    idx = await res.json();
+    fuse = new Fuse(idx, {
+      keys: [
+        { name: 'title', weight: 0.5 },
+        { name: 'description', weight: 0.25 },
+        { name: 'tags', weight: 0.15 },
+        { name: 'body', weight: 0.1 },
+      ],
+      threshold: 0.35,
+      includeMatches: true,
+      minMatchCharLength: 2,
+    });
+  }
+
+  function open() {
+    if (!modal || !input) return;
+    modal.setAttribute('data-open', 'true');
+    document.body.style.overflow = 'hidden';
+    loadIndex();
+    setTimeout(() => input.focus(), 50);
+  }
+
+  function close() {
+    if (!modal || !input) return;
+    modal.setAttribute('data-open', 'false');
+    document.body.style.overflow = '';
+    input.value = '';
+    renderResults([]);
+  }
+
+  function renderResults(matches: any[]) {
+    if (!results) return;
+    if (matches.length === 0) {
+      if (input && input.value) {
+        results.innerHTML = '<div class="search-empty">No results.</div>';
+      } else {
+        results.innerHTML = '<div class="search-empty">Type to search the knowledge base.</div>';
+      }
+      visibleResults = [];
+      return;
+    }
+    visibleResults = matches;
+    selectedIdx = 0;
+    results.innerHTML = matches.slice(0, 20).map((m, i) => `
+      <a class="search-result ${i === 0 ? 'active' : ''}" href="${m.item.url}" data-idx="${i}">
+        <span class="search-result-title">${escapeHtml(m.item.title)}</span>
+        <span class="search-result-meta">${m.item.collection} · ${m.item.category}${m.item.tags.length ? ' · ' + m.item.tags.slice(0, 3).map((t: string) => '#' + t).join(' ') : ''}</span>
+        ${m.item.description ? `<span class="search-result-description">${escapeHtml(m.item.description)}</span>` : ''}
+      </a>
+    `).join('');
+  }
+
+  function escapeHtml(s: string) {
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]!);
+  }
+
+  openers.forEach((o) => o.addEventListener('click', open));
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      if (modal?.getAttribute('data-open') === 'true') close();
+      else open();
+    }
+    if (e.key === 'Escape' && modal?.getAttribute('data-open') === 'true') {
+      close();
+    }
+    if (modal?.getAttribute('data-open') === 'true') {
+      if (e.key === 'ArrowDown' && visibleResults.length > 0) {
+        e.preventDefault();
+        selectedIdx = Math.min(selectedIdx + 1, visibleResults.length - 1);
+        updateSelection();
+      }
+      if (e.key === 'ArrowUp' && visibleResults.length > 0) {
+        e.preventDefault();
+        selectedIdx = Math.max(selectedIdx - 1, 0);
+        updateSelection();
+      }
+      if (e.key === 'Enter' && visibleResults[selectedIdx]) {
+        window.location.href = visibleResults[selectedIdx].item.url;
+      }
+    }
+  });
+
+  function updateSelection() {
+    if (!results) return;
+    const items = results.querySelectorAll('.search-result');
+    items.forEach((el, i) => {
+      el.classList.toggle('active', i === selectedIdx);
+      if (i === selectedIdx) el.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  if (input) {
+    input.addEventListener('input', async () => {
+      await loadIndex();
+      if (!fuse) return;
+      const q = input.value.trim();
+      if (!q) { renderResults([]); return; }
+      const matches = fuse.search(q, { limit: 20 });
+      renderResults(matches);
+    });
+  }
+</script>

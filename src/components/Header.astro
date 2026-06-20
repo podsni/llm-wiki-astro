@@ -1,0 +1,31 @@
+---
+import { COLLECTIONS, COLLECTION_LABELS, getEntryUrl } from '../utils/content';
+
+const path = Astro.url.pathname;
+const isActive = (p: string) => path === p || (p !== '/' && path.startsWith(p));
+---
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="/" class="site-logo">
+      <span class="site-logo-mark">L</span>
+      <span>LLM Wiki</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <a href="/articles" class={isActive('/articles') ? 'active' : ''}>All</a>
+      <a href="/timeline" class={isActive('/timeline') ? 'active' : ''}>Timeline</a>
+      <a href="/graph" class={isActive('/graph') ? 'active' : ''}>Graph</a>
+      <a href="/about" class={isActive('/about') ? 'active' : ''}>About</a>
+      <a href="/rss.xml" title="RSS feed" aria-label="RSS">RSS</a>
+      <button class="site-search-trigger" data-search-open type="button" aria-label="Search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <span>Search...</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <button class="theme-toggle" aria-label="Toggle theme">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,257 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getGraphData } from '../utils/content';
+
+const { nodes, edges } = await getGraphData();
+const collectionColors: Record<string, string> = {
+  notes: '#5b8c5a',
+  articles: '#8b3a2e',
+  concepts: '#c08b3a',
+  people: '#6b8eaf',
+  projects: '#7a5d8b',
+  books: '#3a7a7a',
+  research: '#a86a3a',
+  timeline: '#888',
+  sources: '#666',
+};
+---
+
+<BaseLayout title="Graph view" description="Interactive graph of all articles and their connections.">
+  <div class="container">
+    <header class="article-header" style="margin-top: var(--sp-6);">
+      <span class="category-chip">Graph</span>
+      <h1 style="margin-top: 0;">Graph view</h1>
+      <p class="article-description">
+        All {nodes.length} articles and their {edges.length} connections. Drag to pan, scroll to zoom, click a node to open the article.
+      </p>
+    </header>
+
+    <div class="graph-container" id="graph-container" data-nodes={JSON.stringify(nodes)} data-edges={JSON.stringify(edges)}>
+      <svg></svg>
+      <div class="graph-controls">
+        <input type="search" id="graph-search" placeholder="Find node..." />
+        <select id="graph-collection">
+          <option value="">All collections</option>
+          <option value="notes">Notes</option>
+          <option value="articles">Articles</option>
+          <option value="concepts">Concepts</option>
+          <option value="people">People</option>
+          <option value="projects">Projects</option>
+          <option value="books">Books</option>
+          <option value="research">Research</option>
+          <option value="timeline">Timeline</option>
+          <option value="sources">Sources</option>
+        </select>
+      </div>
+      <div class="graph-legend">
+        {Object.entries(collectionColors).slice(0, 6).map(([c, color]) => (
+          <div class="graph-legend-item">
+            <span class="graph-legend-dot" style={`background: ${color};`}></span>
+            <span>{c}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ nodes, edges, collectionColors }}>
+  // Simple force-directed graph using D3-style physics, vanilla JS (no d3 dependency).
+  // Renders SVG nodes + edges; user can pan/zoom and click nodes to navigate.
+  const container = document.getElementById('graph-container');
+  const svg = container.querySelector('svg');
+  const ns = 'http://www.w3.org/2000/svg';
+
+  let width = container.clientWidth;
+  let height = container.clientHeight;
+
+  // Map id -> node for quick lookup
+  const nodeById = new Map();
+  for (const n of nodes) nodeById.set(n.id, n);
+
+  // Initialize node positions randomly with a wider spread
+  for (const n of nodes) {
+    n.x = width / 2 + (Math.random() - 0.5) * (width * 0.6);
+    n.y = height / 2 + (Math.random() - 0.5) * (height * 0.6);
+    n.vx = 0;
+    n.vy = 0;
+  }
+
+  // Build SVG
+  const linkGroup = document.createElementNS(ns, 'g');
+  const nodeGroup = document.createElementNS(ns, 'g');
+  const labelGroup = document.createElementNS(ns, 'g');
+  svg.appendChild(linkGroup);
+  svg.appendChild(nodeGroup);
+  svg.appendChild(labelGroup);
+
+  // Create link elements
+  const linkEls = edges.map((e) => {
+    const el = document.createElementNS(ns, 'line');
+    el.setAttribute('class', 'graph-link');
+    linkGroup.appendChild(el);
+    return el;
+  });
+
+  // Create node elements
+  const nodeEls = nodes.map((n) => {
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'graph-node');
+    g.dataset.id = n.id;
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('r', 6);
+    circle.setAttribute('fill', collectionColors[n.collection] || '#888');
+    circle.setAttribute('stroke', 'var(--color-bg)');
+    circle.setAttribute('stroke-width', 2);
+    g.appendChild(circle);
+    nodeGroup.appendChild(g);
+    g.addEventListener('click', () => { window.location.href = n.url; });
+    g.addEventListener('mouseenter', () => { circle.setAttribute('r', 10); label.setAttribute('font-size', '13'); });
+    g.addEventListener('mouseleave', () => { circle.setAttribute('r', 6); label.setAttribute('font-size', '10'); });
+
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('class', 'graph-node-label');
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('y', -10);
+    label.setAttribute('opacity', 0.85);
+    label.setAttribute('font-size', '10');
+    label.textContent = n.title;
+    g.appendChild(label);
+    return g;
+  });
+
+  // Simulation
+  function tick() {
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      // Repulsion from other nodes (much stronger)
+      for (let j = 0; j < nodes.length; j++) {
+        if (i === j) continue;
+        const m = nodes[j];
+        const dx = n.x - m.x;
+        const dy = n.y - m.y;
+        const d2 = dx * dx + dy * dy + 0.01;
+        const d = Math.sqrt(d2);
+        const force = 4000 / d2;
+        n.vx += (dx / d) * force;
+        n.vy += (dy / d) * force;
+      }
+      // Center attraction (gentler to allow spreading)
+      n.vx += (width / 2 - n.x) * 0.0005;
+      n.vy += (height / 2 - n.y) * 0.0005;
+    }
+    // Spring forces on edges (longer ideal distance)
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
+      const a = nodeById.get(e.source);
+      const b = nodeById.get(e.target);
+      if (!a || !b) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+      const target = 180;
+      const force = (d - target) * 0.04;
+      const fx = (dx / d) * force;
+      const fy = (dy / d) * force;
+      a.vx += fx; a.vy += fy;
+      b.vx -= fx; b.vy -= fy;
+    }
+    // Damping + integration
+    for (const n of nodes) {
+      n.vx *= 0.7; n.vy *= 0.7;
+      n.x += n.vx; n.y += n.vy;
+      n.x = Math.max(10, Math.min(width - 10, n.x));
+      n.y = Math.max(10, Math.min(height - 10, n.y));
+    }
+    // Update SVG
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
+      const a = nodeById.get(e.source);
+      const b = nodeById.get(e.target);
+      const el = linkEls[i];
+      el.setAttribute('x1', a.x);
+      el.setAttribute('y1', a.y);
+      el.setAttribute('x2', b.x);
+      el.setAttribute('y2', b.y);
+    }
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      const el = nodeEls[i];
+      el.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+    }
+  }
+
+  let running = true;
+  function loop() {
+    if (running) tick();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // Pan/zoom via SVG viewBox
+  let viewX = 0, viewY = 0, scale = 1;
+  function updateView() {
+    const w = width / scale;
+    const h = height / scale;
+    svg.setAttribute('viewBox', `${viewX} ${viewY} ${w} ${h}`);
+  }
+  updateView();
+
+  let isPanning = false, panStart = { x: 0, y: 0, vx: 0, vy: 0 };
+  svg.addEventListener('mousedown', (e) => {
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY, vx: viewX, vy: viewY };
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    const dx = (e.clientX - panStart.x) / scale;
+    const dy = (e.clientY - panStart.y) / scale;
+    viewX = panStart.vx - dx;
+    viewY = panStart.vy - dy;
+    updateView();
+  });
+  window.addEventListener('mouseup', () => { isPanning = false; });
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 1.1 : 0.9;
+    scale = Math.max(0.3, Math.min(5, scale * factor));
+    updateView();
+  });
+
+  // Search & filter
+  const search = document.getElementById('graph-search');
+  const collection = document.getElementById('graph-collection');
+  function applyFilter() {
+    const q = search.value.toLowerCase();
+    const c = collection.value;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      const matches = (!q || n.title.toLowerCase().includes(q)) && (!c || n.collection === c);
+      nodeEls[i].style.opacity = matches ? 1 : 0.15;
+    }
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
+      const a = nodeById.get(e.source);
+      const b = nodeById.get(e.target);
+      const aVis = !a.style || a.style.opacity !== '0.15';
+      const bVis = !b.style || b.style.opacity !== '0.15';
+      linkEls[i].style.opacity = (aVis && bVis) ? 0.5 : 0.05;
+    }
+  }
+  search.addEventListener('input', applyFilter);
+  collection.addEventListener('change', applyFilter);
+
+  // Pause when offscreen
+  const observer = new IntersectionObserver((entries) => {
+    running = entries[0].isIntersecting;
+  });
+  observer.observe(container);
+
+  // Resize
+  window.addEventListener('resize', () => {
+    width = container.clientWidth;
+    height = container.clientHeight;
+    updateView();
+  });
+</script>

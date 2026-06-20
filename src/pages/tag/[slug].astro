@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllEntries, getEntryUrl } from '../../utils/content';
+import { formatDate } from '../../utils/format';
+
+export async function getStaticPaths() {
+  const all = await getAllEntries();
+  const tagSet = new Set<string>();
+  for (const { entry } of all) {
+    for (const tag of entry.data.tags) tagSet.add(tag);
+  }
+  return [...tagSet].map((tag) => ({ params: { slug: tag }, props: { tag } }));
+}
+
+const { tag } = Astro.props;
+const all = await getAllEntries();
+const items = all.filter(({ entry }) => entry.data.tags.includes(tag)).sort((a, b) =>
+  new Date(b.entry.data.updated ?? b.entry.data.date).valueOf() - new Date(a.entry.data.updated ?? a.entry.data.date).valueOf()
+);
+---
+
+<BaseLayout title={`Tag: #${tag}`} description={`Articles tagged with #${tag}.`}>
+  <div class="container-narrow">
+    <header class="article-header" style="margin-top: var(--sp-6);">
+      <span class="category-chip">Tag</span>
+      <h1 style="margin-top: 0;">#{tag}</h1>
+      <p class="article-description">{items.length} article{items.length === 1 ? '' : 's'} tagged with #{tag}.</p>
+    </header>
+
+    {items.length === 0 ? (
+      <p class="text-soft">No articles yet.</p>
+    ) : (
+      <div>
+        {items.map(({ collection, entry }) => (
+          <a class="list-item" href={getEntryUrl(collection, entry.id)}>
+            <span class="list-item-title">{entry.data.title}</span>
+            {entry.data.description && <span class="list-item-description">{entry.data.description}</span>}
+            <span class="list-item-meta">
+              {collection} · {formatDate(entry.data.updated ?? entry.data.date)}
+            </span>
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>

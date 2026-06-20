@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllEntries, getEntryUrl } from '../utils/content';
+import { formatYear, formatDate } from '../utils/format';
+
+const all = await getAllEntries();
+all.sort((a, b) => new Date(b.entry.data.date).valueOf() - new Date(a.entry.data.date).valueOf());
+
+// Group by year
+const byYear = new Map<string, typeof all>();
+for (const item of all) {
+  const year = formatYear(item.entry.data.date);
+  const list = byYear.get(year) ?? [];
+  list.push(item);
+  byYear.set(year, list);
+}
+const years = [...byYear.keys()].sort((a, b) => Number(b) - Number(a));
+---
+
+<BaseLayout title="Archive" description="Full archive of all articles, organized by year.">
+  <div class="container-narrow">
+    <header class="article-header" style="margin-top: var(--sp-6);">
+      <span class="category-chip">Archive</span>
+      <h1 style="margin-top: 0;">Archive</h1>
+      <p class="article-description">Every article in the wiki, organized by year. {all.length} total.</p>
+    </header>
+
+    {years.map((year) => (
+      <section>
+        <h2 class="archive-year">{year} <span class="text-muted" style="font-size: var(--fs-base);">({byYear.get(year)!.length})</span></h2>
+        {byYear.get(year)!.map(({ collection, entry }) => (
+          <a class="list-item" href={getEntryUrl(collection, entry.id)}>
+            <span class="list-item-title">{entry.data.title}</span>
+            {entry.data.description && <span class="list-item-description">{entry.data.description}</span>}
+            <span class="list-item-meta">
+              {collection} · {formatDate(entry.data.date)}
+            </span>
+          </a>
+        ))}
+      </section>
+    ))}
+  </div>
+</BaseLayout>

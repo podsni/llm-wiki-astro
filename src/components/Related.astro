@@ -1,0 +1,74 @@
+---
+import { COLLECTIONS, findEntry, getEntryUrl } from '../utils/content';
+
+interface Props {
+  related: string[];
+}
+
+const { related } = Astro.props;
+const resolved: { collection: string; slug: string; entry: any; url: string }[] = [];
+
+for (const ref of related) {
+  const [targetCollection, targetSlug] = ref.includes('/')
+    ? (ref.split('/') as [string, string])
+    : [null, ref];
+
+  let entry = null;
+  let resolvedCollection = targetCollection;
+  if (targetCollection) {
+    entry = await findEntry(targetCollection as any, targetSlug);
+  } else {
+    for (const c of COLLECTIONS) {
+      const e = await findEntry(c, targetSlug);
+      if (e) {
+        entry = e;
+        resolvedCollection = c;
+        break;
+      }
+    }
+  }
+
+  if (entry) {
+    resolved.push({
+      collection: resolvedCollection!,
+      slug: targetSlug,
+      entry,
+      url: getEntryUrl(resolvedCollection as any, targetSlug),
+    });
+  }
+}
+
+const unresolved = related.filter((r) => !resolved.some((res) =>
+  res.url === getEntryUrl((r.includes('/') ? r.split('/')[0] : '') as any, r.includes('/') ? r.split('/')[1] : r)
+));
+---
+
+{resolved.length > 0 && (
+  <section class="article-section">
+    <h2>Related articles</h2>
+    <div class="card-grid">
+      {resolved.map(({ entry, url, collection }) => (
+        <a class="card" href={url}>
+          <h3 class="card-title">{entry.data.title}</h3>
+          {entry.data.description && <p class="card-description">{entry.data.description}</p>}
+          <div class="card-meta">
+            <span>{collection}</span>
+            {entry.data.tags && entry.data.tags.length > 0 && <span>#{entry.data.tags[0]}</span>}
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+)}
+
+{unresolved.length > 0 && (
+  <section class="article-section">
+    <h2>Not yet written</h2>
+    <p class="text-soft" style="font-size: var(--fs-sm);">
+      The following related pages are referenced but don't exist yet — they would make good future additions.
+    </p>
+    <ul>
+      {unresolved.map((r) => <li class="archived">{r}</li>)}
+    </ul>
+  </section>
+)}

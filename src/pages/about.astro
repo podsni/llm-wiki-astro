@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getRecentEntries, getAllTags, getAllCategories } from '../utils/content';
+import { formatDate } from '../utils/format';
+
+const recent = await getRecentEntries(8);
+const tags = await getAllTags();
+const categories = await getAllCategories();
+---
+
+<BaseLayout title="About" description="About the LLM Wiki — what it is, who it's for, and how to use it.">
+  <div class="container-narrow">
+    <header class="article-header" style="margin-top: var(--sp-6);">
+      <h1 style="margin-top: 0;">About</h1>
+    </header>
+
+    <div class="article-content">
+      <p>
+        <strong>LLM Wiki</strong> is a personal knowledge base — part blog, part digital garden, part encyclopedia. It's built around three ideas:
+      </p>
+
+      <ul>
+        <li><strong>Articles as nodes, not streams.</strong> Every page stands on its own and is reachable from many other pages. There is no "feed" to scroll; there is a network to explore.</li>
+        <li><strong>Connections are first-class.</strong> Internal links, backlinks, related articles, and a graph view make the structure of the knowledge visible. The map <em>is</em> the territory.</li>
+        <li><strong>Markdown, no fuss.</strong> All content is plain text. No database, no accounts, no comments, no editorial pipeline. You can read it in any editor, version it in git, and host it anywhere.</li>
+      </ul>
+
+      <h2>How to use it</h2>
+      <p>
+        Click around. Start at <a href="/">the homepage</a> for featured articles and recent updates, or open the <a href="/graph">graph view</a> to see the whole network. The search modal (<kbd>⌘K</kbd>) finds articles by title, description, body, or tag.
+      </p>
+      <p>
+        Each article has a <em>sidebar</em> for navigation, a <em>table of contents</em> on the right, and three sections at the bottom:
+      </p>
+      <ul>
+        <li><strong>Related articles</strong> — pages that this one links to.</li>
+        <li><strong>Articles that mention this</strong> — backlinks: pages that link <em>here</em>.</li>
+        <li><strong>References</strong> — the sources cited in the article.</li>
+      </ul>
+
+      <h2>The technology</h2>
+      <p>
+        Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> for static site generation, <a href="https://fusejs.io" target="_blank" rel="noopener">Fuse.js</a> for client-side fuzzy search, <a href="https://shiki.style" target="_blank" rel="noopener">Shiki</a> for syntax highlighting, and a hand-rolled D3-style force simulation for the graph view. No JavaScript framework — the whole site ships as static HTML with a small JS layer for search, theme, and the graph.
+      </p>
+
+      <h2>The collections</h2>
+      <p>The wiki is organized into nine content types:</p>
+      <ul>
+        <li><a href="/articles?type=notes">Notes</a> — quick observations, ideas, fragments</li>
+        <li><a href="/articles?type=articles">Articles</a> — long-form essays and tutorials</li>
+        <li><a href="/articles?type=concepts">Concepts</a> — definitions, explanations, mental models</li>
+        <li><a href="/articles?type=people">People</a> — notable figures</li>
+        <li><a href="/articles?type=projects">Projects</a> — active work and side projects</li>
+        <li><a href="/articles?type=books">Books</a> — books read, in progress, or to-read</li>
+        <li><a href="/articles?type=research">Research</a> — research questions and findings</li>
+        <li><a href="/articles?type=timeline">Timeline</a> — events, milestones, releases</li>
+        <li><a href="/articles?type=sources">Sources</a> — external references</li>
+      </ul>
+
+      <h2>Source</h2>
+      <p>
+        Content is in <a href="https://github.com/podsni/llm-wiki" target="_blank" rel="noopener">a public Git repository</a> as Markdown files. The schema is enforced at build time via <a href="https://zod.dev" target="_blank" rel="noopener">Zod</a>, so frontmatter is type-checked. Adding a new article is a PR.
+      </p>
+
+      <h2>License</h2>
+      <p>Content is licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Code is MIT.</p>
+    </div>
+  </div>
+</BaseLayout>

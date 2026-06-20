@@ -1,0 +1,44 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import { COLLECTIONS, getEntryUrl } from '../../utils/content';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+
+export async function getStaticPaths() {
+  const paths: Array<{ params: { collection: string; slug: string }; props: { collection: string; entry: any } }> = [];
+
+  for (const collection of COLLECTIONS) {
+    const entries = await getCollection(collection);
+    for (const entry of entries) {
+      if (import.meta.env.PROD && entry.data.draft) continue;
+      paths.push({
+        params: { collection, slug: entry.id },
+        props: { collection, entry },
+      });
+    }
+  }
+
+  return paths;
+}
+
+const { collection, entry } = Astro.props;
+const { Content, headings } = await render(entry);
+
+// Body text for reading time — strip frontmatter and markdown syntax
+const rawBody = (entry as any).body ?? '';
+const bodyText = rawBody
+  .replace(/---[\s\S]*?---/, '')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/[#*_>~|`]+/g, ' ')
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  .replace(/\s+/g, ' ')
+  .trim();
+---
+
+<ArticleLayout
+  collection={collection}
+  entry={entry}
+  bodyText={bodyText}
+  headings={headings}
+>
+  <Content />
+</ArticleLayout>

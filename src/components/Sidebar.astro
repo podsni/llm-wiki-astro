@@ -1,0 +1,59 @@
+---
+import { getAllCategories, getAllTags } from '../utils/content';
+
+interface Props {
+  activeSlug?: string;
+  activeCollection?: string;
+}
+
+const { activeSlug, activeCollection } = Astro.props;
+const path = Astro.url.pathname;
+const categories = await getAllCategories();
+const tags = await getAllTags();
+---
+
+<nav class="sidebar-nav" aria-label="Knowledge base navigation">
+  <h3>Browse</h3>
+  <ul>
+    <li><a href="/" class={path === '/' ? 'active' : ''}>Home</a></li>
+    <li><a href="/articles" class={path === '/articles' ? 'active' : ''}>All articles</a></li>
+    <li><a href="/timeline" class={path === '/timeline' ? 'active' : ''}>Timeline</a></li>
+    <li><a href="/graph" class={path === '/graph' ? 'active' : ''}>Graph view</a></li>
+    <li><a href="/archive" class={path === '/archive' ? 'active' : ''}>Archive</a></li>
+  </ul>
+
+  <h3>Collections</h3>
+  <ul>
+    <li><a href="/articles?type=notes" class={activeCollection === 'notes' ? 'active' : ''}>Notes</a></li>
+    <li><a href="/articles?type=articles" class={activeCollection === 'articles' ? 'active' : ''}>Articles</a></li>
+    <li><a href="/articles?type=concepts" class={activeCollection === 'concepts' ? 'active' : ''}>Concepts</a></li>
+    <li><a href="/articles?type=projects" class={activeCollection === 'projects' ? 'active' : ''}>Projects</a></li>
+    <li><a href="/articles?type=books" class={activeCollection === 'books' ? 'active' : ''}>Books</a></li>
+    <li><a href="/articles?type=research" class={activeCollection === 'research' ? 'active' : ''}>Research</a></li>
+    <li><a href="/articles?type=people" class={activeCollection === 'people' ? 'active' : ''}>People</a></li>
+    <li><a href="/articles?type=timeline" class={activeCollection === 'timeline' ? 'active' : ''}>Timeline</a></li>
+    <li><a href="/articles?type=sources" class={activeCollection === 'sources' ? 'active' : ''}>Sources</a></li>
+  </ul>
+
+  {categories.length > 0 && (
+    <details class="sidebar-categories" open>
+      <summary>Categories ({categories.length})</summary>
+      <ul>
+        {categories.slice(0, 15).map(c => (
+          <li><a href={`/category/${c.category}`}>{c.category} ({c.count})</a></li>
+        ))}
+      </ul>
+    </details>
+  )}
+
+  {tags.length > 0 && (
+    <details class="sidebar-categories">
+      <summary>Tags ({tags.length})</summary>
+      <ul>
+        {tags.slice(0, 20).map(t => (
+          <li><a href={`/tag/${t.tag}`}>#{t.tag} ({t.count})</a></li>
+        ))}
+      </ul>
+    </details>
+  )}
+</nav>

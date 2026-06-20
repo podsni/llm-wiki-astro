@@ -1,0 +1,34 @@
+---
+interface Props {
+  references: {
+    title: string;
+    url?: string;
+    author?: string;
+    date?: Date;
+    note?: string;
+  }[];
+}
+
+const { references } = Astro.props;
+---
+
+{references && references.length > 0 && (
+  <section class="article-section">
+    <h2>References</h2>
+    <ol class="references-list">
+      {references.map((r) => (
+        <li>
+          <span class="reference-title">
+            {r.url ? <a href={r.url} target="_blank" rel="noopener">{r.title}</a> : r.title}
+          </span>
+          <div class="reference-meta">
+            {r.author && <span>{r.author}</span>}
+            {r.author && r.date && <span> · </span>}
+            {r.date && <span>{new Date(r.date).getFullYear()}</span>}
+          </div>
+          {r.note && <div class="reference-note">{r.note}</div>}
+        </li>
+      ))}
+    </ol>
+  </section>
+)}

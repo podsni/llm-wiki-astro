@@ -1,0 +1,128 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllEntries, getRecentEntries, getAllCategories, getAllTags, getEntryUrl } from '../utils/content';
+import { formatDate } from '../utils/format';
+
+const recent = await getRecentEntries(6);
+const featured = recent.slice(0, 3);
+const newNotes = recent.slice(3);
+const categories = await getAllCategories();
+const tags = await getAllTags();
+const all = await getAllEntries();
+
+// Popular: most-connected entries (by inbound related count) — simple heuristic
+const inboundCount = new Map<string, number>();
+for (const { collection: sc, entry: se } of all) {
+  for (const rel of se.data.related ?? []) {
+    const [c, s] = rel.includes('/') ? rel.split('/') : [null, rel];
+    const found = all.find(({ collection, entry }) => (c ? collection === c : true) && entry.id === s);
+    if (found) {
+      const key = `${found.collection}/${found.entry.id}`;
+      inboundCount.set(key, (inboundCount.get(key) ?? 0) + 1);
+    }
+  }
+}
+const popular = [...inboundCount.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 6)
+  .map(([key]) => all.find(({ collection, entry }) => `${collection}/${entry.id}` === key))
+  .filter(Boolean);
+---
+
+<BaseLayout title="LLM Wiki" description="A personal knowledge base — articles, concepts, research, and digital gardening.">
+  <div class="container">
+    <section class="hero">
+      <h1>LLM Wiki</h1>
+      <p>A personal knowledge base — articles, concepts, research, projects, books, and the connections between them.</p>
+      <button class="hero-search" data-search-open type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        Search the wiki...
+        <kbd style="margin-left: auto;">⌘K</kbd>
+      </button>
+    </section>
+
+    {featured.length > 0 && (
+      <section class="home-section">
+        <div class="home-section-header">
+          <h2>Featured</h2>
+          <a href="/articles" class="home-section-link">All articles →</a>
+        </div>
+        <div class="card-grid">
+          {featured.map(({ collection, entry }) => (
+            <a class="card" href={getEntryUrl(collection, entry.id)}>
+              <h3 class="card-title">{entry.data.title}</h3>
+              {entry.data.description && <p class="card-description">{entry.data.description}</p>}
+              <div class="card-meta">
+                <span>{collection}</span>
+                <span>·</span>
+                <span>{formatDate(entry.data.date)}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {newNotes.length > 0 && (
+      <section class="home-section">
+        <div class="home-section-header">
+          <h2>Recent updates</h2>
+          <a href="/timeline" class="home-section-link">Timeline →</a>
+        </div>
+        <div>
+          {newNotes.map(({ collection, entry }) => (
+            <a class="list-item" href={getEntryUrl(collection, entry.id)}>
+              <span class="list-item-title">{entry.data.title}</span>
+              {entry.data.description && <span class="list-item-description">{entry.data.description}</span>}
+              <span class="list-item-meta">
+                {collection} · updated {formatDate(entry.data.updated ?? entry.data.date)}
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {categories.length > 0 && (
+      <section class="home-section">
+        <div class="home-section-header">
+          <h2>Browse by category</h2>
+          <a href="/articles" class="home-section-link">All categories →</a>
+        </div>
+        <div class="tag-list">
+          {categories.map(c => (
+            <a class="tag" href={`/category/${c.category}`}>{c.category} ({c.count})</a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {popular.length > 0 && (
+      <section class="home-section">
+        <div class="home-section-header">
+          <h2>Popular</h2>
+        </div>
+        <div class="card-grid">
+          {popular.map((p) => p && (
+            <a class="card" href={getEntryUrl(p.collection, p.entry.id)}>
+              <h3 class="card-title">{p.entry.data.title}</h3>
+              {p.entry.data.description && <p class="card-description">{p.entry.data.description}</p>}
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {tags.length > 0 && (
+      <section class="home-section">
+        <div class="home-section-header">
+          <h2>Tags</h2>
+          <a href="/articles" class="home-section-link">All tags →</a>
+        </div>
+        <div class="tag-list">
+          {tags.map(t => <a class="tag" href={`/tag/${t.tag}`}>#{t.tag} ({t.count})</a>)}
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>
