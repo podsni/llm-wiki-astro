@@ -1,11 +1,14 @@
 ---
-import { COLLECTIONS, findEntry, getEntryUrl } from '../utils/content';
+import { COLLECTIONS, findEntry, getEntryUrl, computeBacklinks } from '../utils/content';
+import { formatDate } from '../utils/format';
 
 interface Props {
   related: string[];
+  collection: string;
+  slug: string;
 }
 
-const { related } = Astro.props;
+const { related, collection, slug } = Astro.props;
 const resolved: { collection: string; slug: string; entry: any; url: string }[] = [];
 
 for (const ref of related) {
@@ -38,37 +41,119 @@ for (const ref of related) {
   }
 }
 
-const unresolved = related.filter((r) => !resolved.some((res) =>
-  res.url === getEntryUrl((r.includes('/') ? r.split('/')[0] : '') as any, r.includes('/') ? r.split('/')[1] : r)
-));
+// Backlinks: pages that link TO this entry via the `related` field
+const all = await computeBacklinks();
+const backlinks = (all.get(`${collection}/${slug}`) ?? []).map((b: any) => ({
+  ...b,
+  url: getEntryUrl(b.collection, b.entry.id),
+}));
+
+// Unresolved: refs that don't exist yet (only show if there are some)
+const resolvedKeys = new Set(resolved.map((r) => `${r.collection}/${r.slug}`));
+const unresolved = related.filter((r) => {
+  const [c, s] = r.includes('/') ? r.split('/') : [null, r];
+  // If we found the slug in any collection during resolution, it's resolved
+  const wasResolved = resolved.some((res) => res.slug === s);
+  return !wasResolved;
+});
+
+// Deduplicate unresolved by slug
+const unresolvedSeen = new Set<string>();
+const unresolvedUnique = unresolved.filter((r) => {
+  const slug = r.includes('/') ? r.split('/')[1] : r;
+  if (unresolvedSeen.has(slug)) return false;
+  unresolvedSeen.add(slug);
+  return true;
+});
+
+const hasAny = resolved.length > 0 || backlinks.length > 0 || unresolvedUnique.length > 0;
 ---
 
-{resolved.length > 0 && (
-  <section class="article-section">
-    <h2>Related articles</h2>
-    <div class="card-grid">
-      {resolved.map(({ entry, url, collection }) => (
-        <a class="card" href={url}>
-          <h3 class="card-title">{entry.data.title}</h3>
-          {entry.data.description && <p class="card-description">{entry.data.description}</p>}
-          <div class="card-meta">
-            <span>{collection}</span>
-            {entry.data.tags && entry.data.tags.length > 0 && <span>#{entry.data.tags[0]}</span>}
-          </div>
-        </a>
-      ))}
-    </div>
+{hasAny && (
+  <section class="article-section article-connected">
+    <h2>Connected to</h2>
+
+    {backlinks.length > 0 && (
+      <div class="connected-block">
+        <h3 class="connected-subhead">Mentioned by</h3>
+        <ul class="connected-list">
+          {backlinks.map(({ collection: c, entry, url }) => (
+            <li>
+              <a class="list-item" href={url}>
+                <span class="list-item-title">{entry.data.title}</span>
+                {entry.data.description && <span class="list-item-description">{entry.data.description}</span>}
+                <span class="list-item-meta">
+                  {c} · {formatDate(entry.data.date)}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {resolved.length > 0 && (
+      <div class="connected-block">
+        <h3 class="connected-subhead">Related articles</h3>
+        <div class="card-grid connected-cards">
+          {resolved.map(({ entry, url, collection: c }) => (
+            <a class="card" href={url}>
+              <h4 class="card-title">{entry.data.title}</h4>
+              {entry.data.description && <p class="card-description">{entry.data.description}</p>}
+              <div class="card-meta">
+                <span>{c}</span>
+                {entry.data.tags && entry.data.tags.length > 0 && <span>#{entry.data.tags[0]}</span>}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {unresolvedUnique.length > 0 && (
+      <div class="connected-block">
+        <h3 class="connected-subhead">Not yet written</h3>
+        <p class="text-soft connected-note">
+          The following pages are referenced but don't exist yet — they'd make good future additions.
+        </p>
+        <ul class="connected-stubs">
+          {unresolvedUnique.map((r) => (
+            <li class="archived"><span>{r}</span></li>
+          ))}
+        </ul>
+      </div>
+    )}
   </section>
 )}
 
-{unresolved.length > 0 && (
-  <section class="article-section">
-    <h2>Not yet written</h2>
-    <p class="text-soft" style="font-size: var(--fs-sm);">
-      The following related pages are referenced but don't exist yet — they would make good future additions.
-    </p>
-    <ul>
-      {unresolved.map((r) => <li class="archived">{r}</li>)}
-    </ul>
-  </section>
-)}
+<style>
+  .connected-block + .connected-block { margin-top: var(--sp-5); }
+  .connected-subhead {
+    font-family: var(--font-sans);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--sp-3);
+    border: none;
+    padding: 0;
+  }
+  .connected-list { list-style: none; padding: 0; margin: 0; }
+  .connected-list li { padding: var(--sp-3) 0; border-bottom: 1px solid var(--color-border-soft); }
+  .connected-list li:last-child { border-bottom: none; }
+  .connected-cards { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+  .connected-note { font-size: var(--fs-sm); margin-bottom: var(--sp-3); }
+  .connected-stubs { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .connected-stubs li {
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    background: var(--color-bg-soft);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--color-border);
+  }
+  @media (max-width: 768px) {
+    .connected-cards { grid-template-columns: 1fr; }
+  }
+</style>

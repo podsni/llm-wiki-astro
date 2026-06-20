@@ -549,7 +549,14 @@ main { min-height: 70vh; }
    TOC
    ============================================ */
 
-.toc { font-size: var(--fs-sm); }
+.toc {
+  font-size: var(--fs-sm);
+  position: sticky;
+  top: var(--sp-5);
+  align-self: start;
+  max-height: calc(100vh - var(--sp-7));
+  overflow-y: auto;
+}
 .toc h4 {
   font-family: var(--font-sans);
   font-size: var(--fs-xs);
@@ -581,6 +588,13 @@ main { min-height: 70vh; }
    ============================================ */
 
 .article-header { margin-bottom: var(--sp-7); padding-bottom: var(--sp-5); border-bottom: 1px solid var(--color-border-soft); }
+@media (max-width: 600px) {
+  .article-header { margin-bottom: var(--sp-5); padding-bottom: var(--sp-3); }
+  /* Collapse the actions row (Copy/Print) — keep meta line for collection + quality badge */
+  .article-header .article-actions { margin-top: var(--sp-2); }
+  .article-header .article-actions .print-action span { display: none; }
+  .article-header .alias-list { font-size: var(--fs-sm); margin-top: var(--sp-2); }
+}
 
 /* Meta line above the title: collection · quality (no all-caps eyebrow) */
 .article-meta-line {
@@ -646,6 +660,23 @@ main { min-height: 70vh; }
 }
 .article-content h2:first-child { margin-top: 0; }
 .article-content h2:first-child::before { display: none; }
+
+.article-content h3 {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: var(--sp-6);
+  margin-bottom: var(--sp-3);
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+.article-content h3::before {
+  content: "§";
+  color: var(--color-primary);
+  opacity: 0.5;
+  margin-right: var(--sp-2);
+  font-weight: 400;
+}
 
 /* ============================================
    Tags
@@ -945,13 +976,20 @@ main { min-height: 70vh; }
    ============================================ */
 
 /* Hero — asymmetric, two-line display, single dominant idea.
-   NOT a centered SaaS hero with 4 buttons. */
+   NOT a centered SaaS hero with 4 buttons. On desktop, sits in a 2-column
+   grid with a right rail showing the most-recent update. */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-5);
+  border-bottom: 1px solid var(--color-border-soft);
+  margin-bottom: var(--sp-7);
+}
 .hero {
   padding: var(--sp-11) 0 var(--sp-9);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-5);
-  border-bottom: 1px solid var(--color-border-soft);
 }
 .hero-eyebrow {
   font-family: var(--font-sans);
@@ -1011,6 +1049,83 @@ main { min-height: 70vh; }
 }
 .hero-search:hover { border-color: var(--color-primary); color: var(--color-text-soft); }
 .hero-search kbd { margin-left: auto; }
+
+/* Hero right rail — "Latest update" mini-card. Sits beside the hero on desktop,
+   below it on mobile. Distinct from a regular card: more typographic, less boxed. */
+.hero-rail {
+  align-self: end;
+  padding: var(--sp-5) 0 var(--sp-9) var(--sp-7);
+  border-left: 1px solid var(--color-border-soft);
+  max-width: 380px;
+  display: none;
+}
+.hero-rail-label {
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--sp-3);
+}
+.hero-rail-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  text-decoration: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+}
+.hero-rail-card:hover .hero-rail-title { color: var(--color-primary); }
+.hero-rail-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+.hero-rail-date {
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hero-rail-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  transition: color var(--transition);
+}
+.hero-rail-desc {
+  font-size: var(--fs-sm);
+  color: var(--color-text-soft);
+  line-height: 1.5;
+  font-family: var(--font-serif);
+}
+.hero-rail-cta {
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  color: var(--color-primary);
+  margin-top: var(--sp-2);
+}
+.hero-rail-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px dotted var(--color-border);
+  border-bottom: none;
+}
+.hero-rail-secondary:hover { color: var(--color-primary); }
+.hero-rail-secondary span:last-child { transition: transform var(--transition); }
+.hero-rail-secondary:hover span:last-child { transform: translateX(2px); }
 
 .home-section { margin: var(--sp-10) 0; }
 .home-section-header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-5); flex-wrap: wrap; }
@@ -1373,7 +1488,7 @@ main { min-height: 70vh; }
 
 .az-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--sp-3);
   margin: var(--sp-5) 0;
 }
@@ -1390,7 +1505,8 @@ main { min-height: 70vh; }
 .az-jump {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-1);
+  justify-content: flex-start;
+  gap: var(--sp-1) var(--sp-1);
   font-family: var(--font-sans);
   font-size: var(--fs-sm);
   padding: var(--sp-3) 0;
@@ -1398,15 +1514,19 @@ main { min-height: 70vh; }
   border-bottom: 1px solid var(--color-border-soft);
 }
 .az-jump a {
-  display: inline-block;
-  min-width: 28px;
-  text-align: center;
-  padding: 0.2rem 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.5rem;
   border-radius: var(--radius-sm);
   color: var(--color-text-soft);
   border: 1px solid transparent;
+  text-decoration: none;
 }
 .az-jump a:hover { background: var(--color-bg-soft); color: var(--color-primary); border-color: var(--color-border); }
+.az-jump a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .az-jump a.disabled { color: var(--color-text-muted); pointer-events: none; opacity: 0.4; }
 
 .az-item {
@@ -1609,6 +1729,18 @@ main { min-height: 70vh; }
   .card-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 }
 
+/* Desktop: hero rail appears at 1100px+, fills the right whitespace */
+@media (min-width: 1100px) {
+  .hero-grid { grid-template-columns: 1.4fr 1fr; gap: var(--sp-7); }
+  .hero-rail { display: block; }
+}
+
+/* Below 1100px the rail collapses to below — single column hero */
+@media (max-width: 1099px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-rail { display: none; }
+}
+
 /* Tablet portrait: 900px */
 @media (max-width: 900px) {
   .article-layout { gap: var(--sp-4); padding: var(--sp-5) var(--sp-4); }
@@ -1625,6 +1757,9 @@ main { min-height: 70vh; }
   h1 { font-size: var(--fs-3xl); margin-top: var(--sp-5); }
   h2 { font-size: var(--fs-2xl); margin-top: var(--sp-6); }
   h3 { font-size: var(--fs-xl); margin-top: var(--sp-5); }
+  .hero h1 { font-size: 1.75rem; line-height: 1.2; }
+  .hero { padding: var(--sp-5) 0 var(--sp-6); }
+  .home-section { margin: var(--sp-7) 0; }
 
   /* Layout */
   .container, .container-narrow { padding: 0 var(--sp-4); }

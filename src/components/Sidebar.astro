@@ -1,5 +1,5 @@
 ---
-import { getAllCategories, getAllTags } from '../utils/content';
+import { getAllCategories, getAllTags, getAllEntries, COLLECTIONS, COLLECTION_LABELS } from '../utils/content';
 
 interface Props {
   activeSlug?: string;
@@ -10,6 +10,13 @@ const { activeSlug, activeCollection } = Astro.props;
 const path = Astro.url.pathname;
 const categories = await getAllCategories();
 const tags = await getAllTags();
+
+// Only show collections that have at least one entry — prevents dead-end links
+// and keeps the sidebar honest.
+const all = await getAllEntries();
+const collectionsWithContent = COLLECTIONS.filter((c) =>
+  all.some((e) => e.collection === c)
+);
 ---
 
 <nav class="sidebar-nav" aria-label="Knowledge base navigation">
@@ -20,20 +27,20 @@ const tags = await getAllTags();
     <li><a href="/timeline" class={path === '/timeline' ? 'active' : ''}>Timeline</a></li>
     <li><a href="/graph" class={path === '/graph' ? 'active' : ''}>Graph view</a></li>
     <li><a href="/archive" class={path === '/archive' ? 'active' : ''}>Archive</a></li>
+    <li><a href="/az" class={path === '/az' ? 'active' : ''}>A–Z index</a></li>
+    <li><a href="/random" class={path === '/random' ? 'active' : ''}>Random article</a></li>
   </ul>
 
-  <h3>Collections</h3>
-  <ul>
-    <li><a href="/articles?type=notes" class={activeCollection === 'notes' ? 'active' : ''}>Notes</a></li>
-    <li><a href="/articles?type=articles" class={activeCollection === 'articles' ? 'active' : ''}>Articles</a></li>
-    <li><a href="/articles?type=concepts" class={activeCollection === 'concepts' ? 'active' : ''}>Concepts</a></li>
-    <li><a href="/articles?type=projects" class={activeCollection === 'projects' ? 'active' : ''}>Projects</a></li>
-    <li><a href="/articles?type=books" class={activeCollection === 'books' ? 'active' : ''}>Books</a></li>
-    <li><a href="/articles?type=research" class={activeCollection === 'research' ? 'active' : ''}>Research</a></li>
-    <li><a href="/articles?type=people" class={activeCollection === 'people' ? 'active' : ''}>People</a></li>
-    <li><a href="/articles?type=timeline" class={activeCollection === 'timeline' ? 'active' : ''}>Timeline</a></li>
-    <li><a href="/articles?type=sources" class={activeCollection === 'sources' ? 'active' : ''}>Sources</a></li>
-  </ul>
+  {collectionsWithContent.length > 0 && (
+    <>
+      <h3>Collections</h3>
+      <ul>
+        {collectionsWithContent.map((c) => (
+          <li><a href={`/articles?type=${c}`} class={activeCollection === c ? 'active' : ''}>{COLLECTION_LABELS[c]}</a></li>
+        ))}
+      </ul>
+    </>
+  )}
 
   {categories.length > 0 && (
     <details class="sidebar-categories" open>
@@ -50,8 +57,8 @@ const tags = await getAllTags();
     <details class="sidebar-categories">
       <summary>Tags ({tags.length})</summary>
       <ul>
-        {tags.slice(0, 20).map(t => (
-          <li><a href={`/tag/${t.tag}`}>#{t.tag} ({t.count})</a></li>
+        {tags.slice(0, 30).map(t => (
+          <li><a href={`/tag/${t}`}>#{t}</a></li>
         ))}
       </ul>
     </details>

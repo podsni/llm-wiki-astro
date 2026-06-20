@@ -3,7 +3,6 @@ import BaseLayout from './BaseLayout.astro';
 import Sidebar from '../components/Sidebar.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import ArticleMeta from '../components/ArticleMeta.astro';
-import Backlinks from '../components/Backlinks.astro';
 import Related from '../components/Related.astro';
 import References from '../components/References.astro';
 import CopyLink from '../components/CopyLink.astro';
@@ -86,8 +85,7 @@ const hasInfobox = (entry.data.infobox && entry.data.infobox.length > 0) || entr
         <slot />
       </div>
 
-      <Backlinks slug={entry.id} collection={collection} />
-      <Related related={entry.data.related ?? []} />
+      <Related related={entry.data.related ?? []} collection={collection} slug={entry.id} />
       <References references={entry.data.references ?? []} />
     </article>
 

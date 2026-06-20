@@ -36,17 +36,39 @@ const popular = [...inboundCount.entries()]
 <BaseLayout title="LLM Wiki" description="A personal knowledge base — articles, concepts, research, and digital gardening.">
   <div class="container">
 
-    <!-- HERO: asymmetric, single idea, no SaaS button-row -->
-    <section class="hero" aria-labelledby="hero-title">
-      <p class="hero-eyebrow">A digital garden in progress</p>
-      <h1 id="hero-title">A small <em>compendium</em> of things worth knowing.</h1>
-      <p class="hero-lede">Articles, concepts, research notes, and the quiet connections between them — written and tended over time. Built as a personal wiki, kept as a reference book.</p>
-      <button class="hero-search" data-search-open type="button" aria-label="Open search">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-        <span>Search {all.length} articles, {tags.length} tags…</span>
-        <kbd>⌘ K</kbd>
-      </button>
-    </section>
+    <!-- HERO: asymmetric, single idea, no SaaS button-row. On desktop, a right rail
+         shows the most recently updated article — fills the negative space and gives
+         the user a real entry point. The right rail collapses to below on mobile. -->
+    <div class="hero-grid">
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="hero-eyebrow">A digital garden in progress</p>
+        <h1 id="hero-title">A small <em>compendium</em><br />of things worth knowing.</h1>
+        <p class="hero-lede">Articles, concepts, research notes, and the quiet connections between them — written and tended over time. Built as a personal wiki, kept as a reference book.</p>
+        <button class="hero-search" data-search-open type="button" aria-label="Open search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+          <span>Search {all.length} articles, {tags.length} tags…</span>
+          <kbd>⌘ K</kbd>
+        </button>
+      </section>
+
+      {recent[0] && (
+        <aside class="hero-rail" aria-label="Latest update">
+          <p class="hero-rail-label">Latest update</p>
+          <a class="hero-rail-card" href={getEntryUrl(recent[0].collection, recent[0].entry.id)}>
+            <span class="hero-rail-date">{formatDate(recent[0].entry.data.updated ?? recent[0].entry.data.date)}</span>
+            <span class="hero-rail-title">{recent[0].entry.data.title}</span>
+            {recent[0].entry.data.description && (
+              <span class="hero-rail-desc">{recent[0].entry.data.description}</span>
+            )}
+            <span class="hero-rail-cta">Read the update →</span>
+          </a>
+          <a class="hero-rail-secondary" href="/random">
+            <span>Or jump to a random article</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </aside>
+      )}
+    </div>
 
     {featured.length > 0 && (
       <section class="home-section" aria-labelledby="featured-title">
