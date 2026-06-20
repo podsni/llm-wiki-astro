@@ -335,12 +335,13 @@ Redirects to a random article. Wire to a "Random" button in your nav.
     └── utils/
         ├── content.ts             # Collection queries, backlinks, graph
         └── format.ts              # Date, read time, slugify, daysAgo
+├── scripts/
+│   └── deploy-cf.mjs          # Cloudflare Pages direct-API deploy
+├── wrangler.toml              # Cloudflare Pages project config
+├── astro.config.mjs           # Astro config (MDX, sitemap, vite alias ~)
+├── tsconfig.json              # TypeScript config
+└── package.json
 ```
-
----
-
-## Configuration
-
 ### `astro.config.mjs`
 
 ```js
@@ -412,7 +413,12 @@ The build output is a static `dist/` directory. Deploy anywhere that serves stat
 ```bash
 # Using wrangler
 npx wrangler pages deploy dist --project-name=llm-wiki --branch=main
+
+# Or use the included deploy script (no wrangler dependency, uses direct API)
+node scripts/deploy-cf.mjs
 ```
+
+The included `scripts/deploy-cf.mjs` reads your Cloudflare API token from `/tmp/cf_token2.txt` (configurable) and uploads via the direct API — useful when `wrangler` is not available or you want to avoid global installs.
 
 Git push also works if you connect the GitHub repo in the Cloudflare dashboard.
 
