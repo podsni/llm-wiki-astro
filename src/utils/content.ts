@@ -228,7 +228,7 @@ export async function computeBacklinks(): Promise<
 
 /**
  * Build graph data (nodes + edges) for visualization.
- * Nodes: every entry. Edges: every `related` link between entries.
+ * Nodes: every entry. Edges: every `related` link + every internal wikilink in body.
  */
 export async function getGraphData() {
   const all = await getAllEntries();
@@ -242,12 +242,31 @@ export async function getGraphData() {
     title: entry.data.title,
     collection,
     url: getEntryUrl(collection, entry.id),
-    description: entry.data.description,
+    description: entry.data.description || '',
+    date: entry.data.date,
+    updated: entry.data.updated,
   }));
 
+  // Build slug → id map (without collection prefix) for wikilink resolution
+  const slugOnlyMap = new Map<string, string>();
+  for (const { collection, entry } of all) {
+    slugOnlyMap.set(entry.id, `${collection}/${entry.id}`);
+  }
+
   const edges: { source: string; target: string }[] = [];
+  const seen = new Set<string>();
+  const addEdge = (a: string, b: string) => {
+    if (a === b) return;
+    const key = [a, b].sort().join('|');
+    if (seen.has(key)) return;
+    seen.add(key);
+    edges.push({ source: a, target: b });
+  };
+
   for (const { collection: srcCollection, entry: srcEntry } of all) {
     const srcId = `${srcCollection}/${srcEntry.id}`;
+
+    // 1. Explicit `related` frontmatter links
     const related = srcEntry.data.related ?? [];
     for (const target of related) {
       const [targetCollection, targetSlug] = target.includes('/')
@@ -267,15 +286,48 @@ export async function getGraphData() {
           }
         }
       }
-      if (targetId) {
-        // Dedupe edges (A->B same as B->A)
-        const key = [srcId, targetId].sort().join('|');
-        if (!edges.some((e) => `${[e.source, e.target].sort().join('|')}` === key)) {
-          edges.push({ source: srcId, target: targetId });
+      if (targetId) addEdge(srcId, targetId);
+    }
+
+    // 2. Wikilinks in body: [label](/collection/slug) or [label](/slug)
+    if (srcEntry.body) {
+      const wikilinkRe = /\]\((\/[a-z][a-z0-9-]*(?:\/[a-z0-9-]+)?)\)/g;
+      let m: RegExpExecArray | null;
+      while ((m = wikilinkRe.exec(srcEntry.body)) !== null) {
+        const path = m[1];
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length < 2) continue;
+        const [first, second] = parts;
+        // Skip non-collection paths
+        if (['graph', 'az', 'random', 'about', 'all', 'timeline', 'recent', 'archive', 'search'].includes(first)) continue;
+        let targetId: string | null = null;
+        if (COLLECTIONS.includes(first as CollectionName)) {
+          // /collection/slug
+          const e = await findEntry(first as CollectionName, second);
+          if (e) targetId = `${first}/${e.id}`;
+        } else {
+          // /slug → find across collections
+          for (const c of COLLECTIONS) {
+            const e = await findEntry(c, first);
+            if (e) {
+              targetId = `${c}/${e.id}`;
+              break;
+            }
+          }
         }
+        if (targetId) addEdge(srcId, targetId);
       }
     }
   }
 
-  return { nodes, edges };
+  // Compute degree (connection count) per node — useful for sizing
+  const degree: Record<string, number> = {};
+  for (const n of nodes) degree[n.id] = 0;
+  for (const e of edges) {
+    degree[e.source] = (degree[e.source] || 0) + 1;
+    degree[e.target] = (degree[e.target] || 0) + 1;
+  }
+  const nodesWithDegree = nodes.map(n => ({ ...n, degree: degree[n.id] || 0 }));
+
+  return { nodes: nodesWithDegree, edges };
 }

@@ -1,674 +1,1328 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getGraphData } from '../utils/content';
+import { getGraphData, COLLECTION_LABELS } from '../utils/content';
 
 const { nodes, edges } = await getGraphData();
-const collectionColors: Record<string, string> = {
-  notes: '#5b8c5a',
-  articles: '#8b3a2e',
-  concepts: '#c08b3a',
-  people: '#6b8eaf',
-  projects: '#7a5d8b',
-  books: '#3a7a7a',
-  research: '#a86a3a',
-  timeline: '#888',
-  sources: '#666',
+
+const collectionStyles: Record<string, { color: string; glow: string; label: string }> = {
+  notes:     { color: '#5b8c5a', glow: 'rgba(91, 140, 90, 0.35)',  label: 'Notes' },
+  articles:  { color: '#8b3a2e', glow: 'rgba(139, 58, 46, 0.35)',  label: 'Articles' },
+  concepts:  { color: '#c08b3a', glow: 'rgba(192, 139, 58, 0.35)', label: 'Concepts' },
+  people:    { color: '#6b8eaf', glow: 'rgba(107, 142, 175, 0.35)',label: 'People' },
+  projects:  { color: '#7a5d8b', glow: 'rgba(122, 93, 139, 0.35)', label: 'Projects' },
+  books:     { color: '#3a7a7a', glow: 'rgba(58, 122, 122, 0.35)', label: 'Books' },
+  research:  { color: '#a86a3a', glow: 'rgba(168, 106, 58, 0.35)', label: 'Research' },
+  timeline:  { color: '#888',    glow: 'rgba(136, 136, 136, 0.35)',label: 'Timeline' },
+  sources:   { color: '#666',    glow: 'rgba(102, 102, 102, 0.35)',label: 'Sources' },
 };
+
+const counts: Record<string, number> = {};
+for (const n of nodes) counts[n.collection] = (counts[n.collection] || 0) + 1;
+const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
 ---
 
-<BaseLayout title="Graph view" description="Interactive graph of all articles and their connections.">
-  <div class="container">
+<BaseLayout title="Graph view" description="Interactive graph of all articles and their connections in the LLM Wiki.">
+  <div class="container graph-page">
     <header class="article-header" style="margin-top: var(--sp-6);">
       <span class="category-chip">Graph</span>
-      <h1 style="margin-top: 0;">Graph view</h1>
+      <h1 style="margin-top: 0;">The LLM Wiki Knowledge Graph</h1>
       <p class="article-description">
-        All {nodes.length} articles and their {edges.length} connections. <strong>Drag to pan</strong>, <strong>scroll/pinch to zoom</strong>, <strong>drag nodes</strong> to reposition, <strong>click a node</strong> to open the article.
+        A living network of <strong>{nodes.length} articles</strong> and <strong>{edges.length} connections</strong>.
+        Each node is a page; each line is a real wikilink or <code>related</code> field between them.
+        Drag nodes to reorganize, scroll to zoom, click to open.
       </p>
     </header>
 
-    <div class="graph-container" id="graph-container" data-nodes={JSON.stringify(nodes)} data-edges={JSON.stringify(edges)}>
-      <svg></svg>
-      <div class="graph-controls">
-        <input type="search" id="graph-search" placeholder="Find node..." aria-label="Find node" />
-        <select id="graph-collection" aria-label="Filter by collection">
-          <option value="">All collections</option>
-          <option value="notes">Notes</option>
-          <option value="articles">Articles</option>
-          <option value="concepts">Concepts</option>
-          <option value="people">People</option>
-          <option value="projects">Projects</option>
-          <option value="books">Books</option>
-          <option value="research">Research</option>
-          <option value="timeline">Timeline</option>
-          <option value="sources">Sources</option>
-        </select>
+    <div class="graph-stats">
+      <div class="stat">
+        <span class="stat-num">{nodes.length}</span>
+        <span class="stat-label">nodes</span>
       </div>
-      <div class="graph-actions">
-        <button class="graph-btn" id="graph-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
-        <button class="graph-btn" id="graph-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
-        <button class="graph-btn" id="graph-zoom-reset" title="Reset view" aria-label="Reset view">⌂</button>
+      <div class="stat">
+        <span class="stat-num">{edges.length}</span>
+        <span class="stat-label">edges</span>
       </div>
-      <button class="graph-legend-toggle" id="graph-legend-toggle" aria-label="Toggle legend" aria-expanded="false">
-        <span aria-hidden="true">●</span> Legend
+      <div class="stat">
+        <span class="stat-num">{Object.keys(counts).length}</span>
+        <span class="stat-label">collections</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">{Math.round((edges.length / nodes.length) * 10) / 10}</span>
+        <span class="stat-label">avg degree</span>
+      </div>
+      <div class="stat hub-stat" title="Most connected articles">
+        <span class="stat-num">{hubs[0]?.degree || 0}</span>
+        <span class="stat-label">hub size</span>
+      </div>
+    </div>
+
+    <div class="graph-filters" role="group" aria-label="Filter by collection">
+      <button class="chip chip-all is-active" data-filter="" aria-pressed="true">
+        <span class="chip-dot" style="background: linear-gradient(135deg, #5b8c5a, #8b3a2e, #c08b3a, #6b8eaf, #3a7a7a);"></span>
+        <span class="chip-label">All</span>
+        <span class="chip-count">{nodes.length}</span>
       </button>
-      <div class="graph-legend" id="graph-legend" hidden>
-        {Object.entries(collectionColors).map(([c, color]) => (
-          <div class="graph-legend-item">
-            <span class="graph-legend-dot" style={`background: ${color};`}></span>
-            <span>{c}</span>
-          </div>
-        ))}
+      {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([col, count]) => (
+        <button class="chip" data-filter={col} aria-pressed="false" style={`--chip-color: ${collectionStyles[col]?.color};`}>
+          <span class="chip-dot" style={`background: ${collectionStyles[col]?.color};`}></span>
+          <span class="chip-label">{collectionStyles[col]?.label || col}</span>
+          <span class="chip-count">{count}</span>
+        </button>
+      ))}
+    </div>
+
+    <div class="graph-layout" id="graph-container">
+      <svg class="graph-svg" id="graph-svg" preserveAspectRatio="xMidYMid meet"></svg>
+
+      <div class="graph-actions" role="toolbar" aria-label="Graph actions">
+        <div class="layout-switch" role="group" aria-label="Layout">
+          <button class="layout-btn is-active" data-layout="cluster" title="Cluster by collection" aria-label="Cluster by collection">⊕</button>
+          <button class="layout-btn" data-layout="force" title="Force-directed" aria-label="Force-directed">∿</button>
+          <button class="layout-btn" data-layout="radial" title="Radial by degree" aria-label="Radial by degree">◉</button>
+        </div>
+        <div class="zoom-stack">
+          <button class="graph-btn" id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+          <button class="graph-btn" id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+          <button class="graph-btn" id="zoom-reset" title="Reset view" aria-label="Reset view">⌂</button>
+        </div>
+        <button class="graph-btn graph-btn-wide" id="fullscreen-btn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
       </div>
-      <div class="graph-hint" id="graph-hint">Tap &amp; drag to pan · pinch to zoom · tap a node to open</div>
+
+      <div class="graph-search">
+        <input type="search" id="graph-search" placeholder="Search articles..." aria-label="Search articles" />
+        <div class="search-results" id="search-results" hidden></div>
+      </div>
+
+      <div class="graph-hubs" id="graph-hubs">
+        <button class="hubs-toggle" id="hubs-toggle" aria-label="Toggle top hubs" aria-expanded="true">×</button>
+        <h3>Top hubs</h3>
+        <p class="hubs-hint">Node size = connections</p>
+        <ol>
+          {hubs.map((h) => (
+            <li>
+              <a href={h.url} class="hub-link" data-id={h.id}>
+                <span class="hub-dot" style={`background: ${collectionStyles[h.collection]?.color};`}></span>
+                <span class="hub-title">{h.title}</span>
+                <span class="hub-degree">{h.degree}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div class="graph-minimap" id="graph-minimap">
+        <svg id="minimap-svg" viewBox="0 0 200 130" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="minimap-viewport" id="minimap-viewport"></div>
+      </div>
+
+      <div class="graph-preview" id="graph-preview" hidden aria-live="polite">
+        <button class="preview-close" id="preview-close" aria-label="Close preview">×</button>
+        <span class="preview-collection" id="preview-collection"></span>
+        <h3 class="preview-title" id="preview-title"></h3>
+        <p class="preview-description" id="preview-description"></p>
+        <div class="preview-stats">
+          <span class="preview-stat" id="preview-degree"></span>
+        </div>
+        <a class="preview-link" id="preview-link" href="#">Open article →</a>
+      </div>
+
+      <div class="graph-hint" id="graph-hint">
+        <span>Drag to pan</span> · <span>Scroll to zoom</span> · <span>Click a node</span>
+      </div>
     </div>
   </div>
 </BaseLayout>
 
 <style>
-  .graph-container {
-    position: relative;
-    width: 100%;
-    height: 70vh;
-    min-height: 480px;
-    background: var(--color-bg-soft);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .graph-container > svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .graph-controls {
-    position: absolute;
-    top: var(--sp-3);
-    left: var(--sp-3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    padding: var(--sp-2);
-    z-index: 10;
-    max-width: 240px;
-  }
-  .graph-controls input,
-  .graph-controls select {
-    border: 1px solid var(--color-border);
-    background: var(--color-bg);
-    color: var(--color-text);
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: var(--fs-sm);
-    font-family: inherit;
-    width: 100%;
-  }
-  .graph-actions {
-    position: absolute;
-    top: var(--sp-3);
-    right: var(--sp-3);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    z-index: 10;
-  }
-  .graph-btn {
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--color-border);
-    background: var(--color-bg);
-    color: var(--color-text);
-    border-radius: 6px;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .graph-btn:hover { background: var(--color-bg-soft); border-color: var(--color-primary); }
-  .graph-btn:active { transform: scale(0.95); }
-  .graph-hint {
-    position: absolute;
-    bottom: var(--sp-3);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: var(--fs-xs);
-    color: var(--color-text-soft);
-    pointer-events: none;
-    z-index: 10;
-    opacity: 0.9;
-    text-align: center;
-    max-width: 90%;
-  }
-  .graph-hint.hidden { display: none; }
-  .graph-legend {
-    position: absolute;
-    bottom: var(--sp-3);
-    left: var(--sp-3);
+  .graph-page { max-width: 1400px; }
+  .graph-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-2);
-    padding: var(--sp-2);
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    z-index: 5;
-    max-width: 60%;
+    gap: var(--sp-3);
+    margin: var(--sp-4) 0 var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 8px;
   }
-  .graph-legend[hidden] { display: none; }
-  .graph-legend-toggle {
-    position: absolute;
-    bottom: var(--sp-3);
-    left: var(--sp-3);
-    z-index: 6;
-    padding: 6px 10px;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    color: var(--color-text);
-    font-size: var(--fs-xs);
-    font-family: inherit;
-    cursor: pointer;
-    display: flex;
+  .stat { display: flex; flex-direction: column; align-items: flex-start; gap: 0; min-width: 80px; }
+  .stat-num {
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+  .hub-stat .stat-num { color: var(--color-accent); }
+
+  .graph-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--sp-3); }
+  .chip {
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-bg-elev);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
-  .graph-legend-toggle:hover { background: var(--color-bg-soft); border-color: var(--color-primary); }
-  .graph-legend-toggle[aria-expanded="true"] { background: var(--color-primary); color: var(--color-bg); border-color: var(--color-primary); }
-  .graph-legend-toggle .dot { color: var(--color-primary); }
+  .chip:hover { border-color: var(--chip-color, var(--color-primary)); transform: translateY(-1px); }
+  .chip.is-active {
+    background: var(--chip-color, var(--color-primary));
+    color: var(--color-bg);
+    border-color: var(--chip-color, var(--color-primary));
+  }
+  .chip.is-active .chip-count { color: var(--color-bg); opacity: 0.85; }
+  .chip.is-active .chip-dot { background: var(--color-bg) !important; }
+  .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chip-count {
+    font-size: 0.7rem;
+    background: var(--color-bg-sunken);
+    color: var(--color-text-soft);
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-left: 2px;
+  }
+
+  .graph-layout {
+    position: relative;
+    width: 100%;
+    height: 78vh;
+    min-height: 540px;
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background-image: radial-gradient(circle at 1px 1px, var(--color-border-soft) 1px, transparent 0);
+    background-size: 24px 24px;
+    box-shadow: 0 1px 0 var(--color-border-soft) inset, 0 8px 24px -16px rgba(0,0,0,0.15);
+  }
+  .graph-svg { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+  .graph-actions { position: absolute; top: var(--sp-3); right: var(--sp-3); display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  .layout-switch { display: flex; background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: 6px; overflow: hidden; }
+  .layout-btn {
+    width: 32px; height: 32px;
+    background: transparent; border: none;
+    color: var(--color-text-soft);
+    font-size: 16px; cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .layout-btn:hover { background: var(--color-bg-soft); color: var(--color-text); }
+  .layout-btn.is-active { background: var(--color-primary); color: var(--color-bg); }
+  .zoom-stack { display: flex; flex-direction: column; background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: 6px; overflow: hidden; }
+  .graph-btn {
+    width: 36px; height: 36px;
+    background: var(--color-bg-elev); border: none;
+    color: var(--color-text);
+    font-size: 18px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit; transition: background 0.15s;
+  }
+  .graph-btn:hover { background: var(--color-bg-soft); }
+  .graph-btn:active { transform: scale(0.95); }
+  .zoom-stack .graph-btn { border-bottom: 1px solid var(--color-border-soft); }
+  .zoom-stack .graph-btn:last-child { border-bottom: none; }
+  .graph-btn-wide { width: 36px; }
+
+  .graph-search { position: absolute; top: var(--sp-3); left: var(--sp-3); z-index: 10; width: 280px; max-width: calc(100% - 180px); }
+  .graph-search input {
+    width: 100%; border: 1px solid var(--color-border);
+    background: var(--color-bg-elev); color: var(--color-text);
+    padding: 9px 14px; border-radius: 8px;
+    font-size: 0.9rem; font-family: inherit;
+    box-shadow: 0 2px 6px -2px rgba(0,0,0,0.08);
+  }
+  .graph-search input:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+  .search-results {
+    margin-top: 4px; background: var(--color-bg-elev);
+    border: 1px solid var(--color-border); border-radius: 8px;
+    max-height: 320px; overflow-y: auto;
+    box-shadow: 0 8px 20px -8px rgba(0,0,0,0.18);
+  }
+  .search-results[hidden] { display: none; }
+  .search-result {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-bottom: 1px solid var(--color-border-soft);
+    cursor: pointer; text-decoration: none; color: var(--color-text);
+  }
+  .search-result:last-child { border-bottom: none; }
+  .search-result:hover, .search-result.is-focused { background: var(--color-bg-soft); }
+  .search-result .res-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .search-result .res-title { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .search-result .res-degree { font-size: 0.7rem; color: var(--color-text-muted); }
+  .search-result mark { background: var(--color-primary-bg); color: var(--color-primary); padding: 0 2px; border-radius: 2px; }
+
+  .graph-hubs {
+    position: absolute; bottom: var(--sp-3); left: var(--sp-3);
+    background: var(--color-bg-elev); border: 1px solid var(--color-border);
+    border-radius: 8px; padding: 12px 14px; max-width: 280px; z-index: 8;
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,0.1);
+    transition: max-width 0.2s, padding 0.2s, opacity 0.2s;
+  }
+  .graph-hubs.is-collapsed {
+    max-width: 36px;
+    padding: 8px 10px;
+  }
+  .graph-hubs.is-collapsed h3,
+  .graph-hubs.is-collapsed .hubs-hint,
+  .graph-hubs.is-collapsed ol {
+    display: none;
+  }
+  .graph-hubs.is-collapsed .hubs-toggle {
+    position: static;
+  }
+  .hubs-toggle {
+    position: absolute; top: 6px; right: 6px;
+    width: 24px; height: 24px;
+    background: transparent; border: none;
+    color: var(--color-text-soft); font-size: 18px; line-height: 1;
+    cursor: pointer; border-radius: 50%; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .hubs-toggle:hover { background: var(--color-bg-soft); color: var(--color-text); }
+  .hubs-hint {
+    font-size: 0.65rem; color: var(--color-text-muted);
+    margin: -2px 0 8px; font-style: italic;
+  }
+  .graph-hubs h3 {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-text-muted); margin: 0 0 8px;
+    font-family: var(--font-display, Georgia, serif); font-weight: 600;
+  }
+  .graph-hubs ol { list-style: none; padding: 0; margin: 0; counter-reset: hub; }
+  .graph-hubs li { counter-increment: hub; margin-bottom: 2px; }
+  .hub-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0; text-decoration: none;
+    color: var(--color-text); font-size: 0.8rem;
+    transition: color 0.15s;
+  }
+  .hub-link::before {
+    content: counter(hub); width: 16px; color: var(--color-text-muted);
+    font-size: 0.7rem; text-align: right; flex-shrink: 0;
+  }
+  .hub-link:hover { color: var(--color-primary); }
+  .hub-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .hub-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hub-degree {
+    font-size: 0.7rem; color: var(--color-accent); font-weight: 600;
+    background: var(--color-bg-sunken); padding: 1px 6px; border-radius: 999px;
+  }
+
+  .graph-minimap {
+    position: absolute; bottom: var(--sp-3); right: var(--sp-3);
+    width: 200px; height: 130px;
+    background: var(--color-bg-elev); border: 1px solid var(--color-border);
+    border-radius: 8px; overflow: hidden; z-index: 8;
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,0.1);
+  }
+  .graph-minimap svg { width: 100%; height: 100%; display: block; }
+  .minimap-viewport {
+    position: absolute; border: 2px solid var(--color-primary);
+    background: rgba(45, 74, 58, 0.08);
+    pointer-events: none; border-radius: 2px;
+  }
+
+  .graph-preview {
+    position: absolute; top: 80px; right: 60px;
+    width: 320px; max-width: calc(100% - 80px);
+    background: var(--color-bg-elev); border: 1px solid var(--color-border);
+    border-radius: 10px; padding: 16px 18px; z-index: 9;
+    box-shadow: 0 12px 32px -8px rgba(0,0,0,0.18);
+    animation: preview-in 0.18s ease-out;
+  }
+  @keyframes preview-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .graph-preview[hidden] { display: none; }
+  .preview-close {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px;
+    background: transparent; border: none;
+    color: var(--color-text-soft); font-size: 20px; line-height: 1;
+    cursor: pointer; border-radius: 50%; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .preview-close:hover { background: var(--color-bg-soft); color: var(--color-text); }
+  .preview-collection {
+    display: inline-block; font-size: 0.65rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--color-primary); font-weight: 600;
+    padding: 2px 8px; border: 1px solid currentColor; border-radius: 999px;
+    margin-bottom: 6px;
+  }
+  .preview-title {
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 1.15rem; font-weight: 600;
+    margin: 4px 0 8px; line-height: 1.2; color: var(--color-text);
+  }
+  .preview-description {
+    font-size: 0.85rem; line-height: 1.4;
+    color: var(--color-text-soft); margin: 0 0 12px;
+  }
+  .preview-stats {
+    display: flex; gap: 12px; margin-bottom: 12px;
+    padding-top: 8px; border-top: 1px solid var(--color-border-soft);
+  }
+  .preview-stat { font-size: 0.75rem; color: var(--color-text-muted); }
+  .preview-link {
+    display: inline-block; font-size: 0.85rem;
+    color: var(--color-primary); text-decoration: none;
+    font-weight: 500; border-bottom: 1px solid transparent;
+  }
+  .preview-link:hover { border-bottom-color: var(--color-primary); }
+
+  .graph-hint {
+    position: absolute; bottom: var(--sp-3); left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-bg-elev); border: 1px solid var(--color-border);
+    padding: 6px 14px; border-radius: 999px;
+    font-size: 0.75rem; color: var(--color-text-soft);
+    pointer-events: none; z-index: 7;
+    box-shadow: 0 2px 6px -2px rgba(0,0,0,0.08);
+  }
+  .graph-hint.hidden { opacity: 0; transition: opacity 0.3s; }
+  .graph-hint span { font-weight: 500; color: var(--color-text); }
+
+  .graph-layout.is-fullscreen { position: fixed; inset: 0; height: 100vh; border-radius: 0; z-index: 1000; }
+  .graph-layout.is-fullscreen .graph-hint { display: none; }
+
   @media (max-width: 768px) {
-    .graph-btn { width: 44px; height: 44px; font-size: 22px; }
-    .graph-hint { font-size: 0.7rem; padding: 4px 8px; }
-    .graph-controls {
-      top: var(--sp-2);
-      left: var(--sp-2);
-      right: calc(44px + var(--sp-2) * 2);
-      max-width: none;
-      flex-direction: column;
-    }
-    .graph-controls input,
-    .graph-controls select {
-      width: 100%;
-      font-size: 0.85rem;
-      padding: 8px 10px;
-    }
-    .graph-legend { max-width: calc(100% - var(--sp-3) * 2); }
+    .graph-layout { height: 70vh; min-height: 480px; }
+    .graph-search { width: calc(100% - 100px); }
+    .graph-hubs { max-width: 220px; font-size: 0.7rem; }
+    .graph-minimap { width: 140px; height: 90px; }
+    .graph-preview { right: 16px; left: 16px; width: auto; top: 70px; }
+    .stat-num { font-size: 1.3rem; }
+    .stat { min-width: 60px; }
+  }
+  @media (max-width: 480px) {
+    .graph-stats { gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
+    .graph-hubs { display: none; }
+    .graph-minimap { display: none; }
+    .graph-search { width: calc(100% - 80px); }
   }
 </style>
 
-<script define:vars={{ nodes, edges, collectionColors }}>
-  (() => {
-    const container = document.getElementById('graph-container');
-    const svg = container.querySelector('svg');
-    const ns = 'http://www.w3.org/2000/svg';
+<script is:inline define:vars={{ nodes, edges, collectionStyles }}>
+(function() {
+  function boot() {
+    var container = document.getElementById('graph-container');
+    var svg = document.getElementById('graph-svg');
+    if (!container || !svg) { setTimeout(boot, 50); return; }
+    var NS = 'http://www.w3.org/2000/svg';
 
-    let width = 800;
-    let height = 600;
+    function colorFor(c) { return (collectionStyles[c] && collectionStyles[c].color) || '#888'; }
+    function glowFor(c) { return (collectionStyles[c] && collectionStyles[c].glow) || 'rgba(136,136,136,0.35)'; }
+    function sizeFor(d) {
+      if (!d) return 5;
+      var maxD = 1;
+      for (var i = 0; i < nodes.length; i++) if ((nodes[i].degree || 0) > maxD) maxD = nodes[i].degree;
+      return 5 + 11 * Math.sqrt(d / maxD);
+    }
 
+    var width = 1200, height = 700;
     function measure() {
-      // Use the actual computed size of the container
-      const rect = container.getBoundingClientRect();
-      width = rect.width || 800;
-      height = rect.height || 600;
+      var r = container.getBoundingClientRect();
+      width = r.width || 1200;
+      height = r.height || 700;
+    }
+    measure();
+
+    // === Cluster regions ===
+    var collections = [];
+    var seenCol = {};
+    for (var k = 0; k < nodes.length; k++) if (!seenCol[nodes[k].collection]) { seenCol[nodes[k].collection] = 1; collections.push(nodes[k].collection); }
+    var cols = Math.ceil(Math.sqrt(collections.length));
+    var clusterRegions = {};
+    var layoutW = width * 0.88;
+    var layoutH = height * 0.88;
+    var startX = (width - layoutW) / 2;
+    var startY = (height - layoutH) / 2;
+    var cellW = layoutW / cols;
+    var cellH = layoutH / Math.ceil(collections.length / cols);
+    var cellR = Math.min(cellW, cellH) * 0.36;
+    for (var ci = 0; ci < collections.length; ci++) {
+      var r = Math.floor(ci / cols);
+      var c = ci % cols;
+      clusterRegions[collections[ci]] = {
+        cx: startX + cellW * c + cellW / 2,
+        cy: startY + cellH * r + cellH / 2,
+        r: cellR
+      };
     }
 
-    // Set SVG viewBox + use 100% sizing via CSS
-    svg.style.width = '100%';
-    svg.style.height = '100%';
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-    // Defer init until after first layout
-    requestAnimationFrame(() => {
-      measure();
-      if (width < 50 || height < 50) {
-        // Container might be hidden — try again after delay
-        setTimeout(() => {
-          measure();
-          init();
-        }, 200);
-      } else {
-        init();
-      }
-    });
-
-    function init() {
-
-    // Map id -> node for quick lookup
-    const nodeById = new Map();
-    for (const n of nodes) nodeById.set(n.id, n);
-
-    // Initialize node positions in a circular/spiral pattern for better initial spread
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i];
-      const angle = (i / nodes.length) * 2 * Math.PI;
-      const radius = Math.min(width, height) * 0.3;
-      n.x = width / 2 + Math.cos(angle) * radius * (1 + 0.3 * (i / nodes.length));
-      n.y = height / 2 + Math.sin(angle) * radius * (1 + 0.3 * (i / nodes.length));
-      n.vx = 0;
-      n.vy = 0;
-      n.fx = null;
-      n.fy = null;
+    // === Initial node positions (CLUSTER layout) ===
+    for (var n = 0; n < nodes.length; n++) {
+      var node = nodes[n];
+      var region = clusterRegions[node.collection] || { cx: width/2, cy: height/2, r: 100 };
+      var ang = Math.random() * Math.PI * 2;
+      var dist = Math.sqrt(Math.random()) * region.r;
+      node.x = region.cx + Math.cos(ang) * dist;
+      node.y = region.cy + Math.sin(ang) * dist;
+      node.vx = 0; node.vy = 0;
+      node.fx = null; node.fy = null;
     }
 
-    // Build SVG groups
-    const linkGroup = document.createElementNS(ns, 'g');
-    const nodeGroup = document.createElementNS(ns, 'g');
-    const labelGroup = document.createElementNS(ns, 'g');
+    // === Defs (gradients) ===
+    var defs = document.createElementNS(NS, 'defs');
+    for (var ds = 0; ds < collections.length; ds++) {
+      var col = collections[ds];
+      var style = collectionStyles[col];
+      if (!style) continue;
+      var grad = document.createElementNS(NS, 'radialGradient');
+      grad.setAttribute('id', 'grad-' + col);
+      grad.setAttribute('cx', '40%');
+      grad.setAttribute('cy', '40%');
+      var s1 = document.createElementNS(NS, 'stop');
+      s1.setAttribute('offset', '0%'); s1.setAttribute('stop-color', style.color); s1.setAttribute('stop-opacity', '1');
+      var s2 = document.createElementNS(NS, 'stop');
+      s2.setAttribute('offset', '100%'); s2.setAttribute('stop-color', style.color); s2.setAttribute('stop-opacity', '0.7');
+      grad.appendChild(s1); grad.appendChild(s2);
+      defs.appendChild(grad);
+    }
+    svg.appendChild(defs);
+
+    // === Cluster region circles (background) ===
+    var regionGroup = document.createElementNS(NS, 'g');
+    regionGroup.setAttribute('opacity', '0.08');
+    for (var ck in clusterRegions) {
+      if (!Object.prototype.hasOwnProperty.call(clusterRegions, ck)) continue;
+      var cR = clusterRegions[ck];
+      var circ = document.createElementNS(NS, 'circle');
+      circ.setAttribute('cx', cR.cx);
+      circ.setAttribute('cy', cR.cy);
+      circ.setAttribute('r', cR.r);
+      circ.setAttribute('fill', colorFor(ck));
+      regionGroup.appendChild(circ);
+    }
+    svg.appendChild(regionGroup);
+
+    // === Cluster labels (collection names on each region) ===
+    var labelGroupRegions = document.createElementNS(NS, 'g');
+    labelGroupRegions.setAttribute('class', 'cluster-labels');
+    for (var clk in clusterRegions) {
+      if (!Object.prototype.hasOwnProperty.call(clusterRegions, clk)) continue;
+      var cR2 = clusterRegions[clk];
+      var txt = document.createElementNS(NS, 'text');
+      txt.setAttribute('class', 'cluster-label');
+      txt.setAttribute('x', cR2.cx);
+      txt.setAttribute('y', cR2.cy - cR2.r - 8);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('font-size', '11');
+      txt.setAttribute('font-weight', '600');
+      txt.setAttribute('text-transform', 'uppercase');
+      txt.setAttribute('letter-spacing', '1.2');
+      txt.setAttribute('fill', colorFor(clk));
+      txt.setAttribute('opacity', '0.65');
+      txt.setAttribute('paint-order', 'stroke');
+      txt.setAttribute('stroke', 'var(--color-bg)');
+      txt.setAttribute('stroke-width', '3');
+      txt.setAttribute('stroke-linejoin', 'round');
+      txt.style.pointerEvents = 'none';
+      txt.textContent = (collectionStyles[clk] && collectionStyles[clk].label) || clk;
+      labelGroupRegions.appendChild(txt);
+    }
+    svg.appendChild(labelGroupRegions);
+
+    // === Layers ===
+    var linkGroup = document.createElementNS(NS, 'g');
+    var nodeGroup = document.createElementNS(NS, 'g');
+    var labelGroup = document.createElementNS(NS, 'g');
     svg.appendChild(linkGroup);
     svg.appendChild(nodeGroup);
     svg.appendChild(labelGroup);
 
-    // Create link elements
-    const linkEls = edges.map((e) => {
-      const el = document.createElementNS(ns, 'line');
-      el.setAttribute('class', 'graph-link');
-      linkGroup.appendChild(el);
-      return el;
-    });
+    // === Create link paths ===
+    var linkEls = [];
+    for (var e = 0; e < edges.length; e++) {
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('class', 'graph-link');
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', 'var(--color-text-muted)');
+      p.setAttribute('stroke-width', '1');
+      p.setAttribute('stroke-opacity', '0.16');
+      linkGroup.appendChild(p);
+      linkEls.push(p);
+    }
 
-    // Create node elements
-    const nodeEls = nodes.map((n) => {
-      const g = document.createElementNS(ns, 'g');
+    // === Create nodes ===
+    var nodeEls = [];
+    var labelEls = [];
+    for (var ni = 0; ni < nodes.length; ni++) {
+      var nd = nodes[ni];
+      var g = document.createElementNS(NS, 'g');
       g.setAttribute('class', 'graph-node');
-      g.dataset.id = n.id;
-      g.style.cursor = 'grab';
-      const circle = document.createElementNS(ns, 'circle');
-      circle.setAttribute('r', 7);
-      circle.setAttribute('fill', collectionColors[n.collection] || '#888');
+      g.setAttribute('data-id', nd.id);
+      g.style.cursor = 'pointer';
+      g.setAttribute('transform', 'translate(' + nd.x + ',' + nd.y + ')');
+
+      var halo = document.createElementNS(NS, 'circle');
+      halo.setAttribute('r', sizeFor(nd.degree) + 6);
+      halo.setAttribute('fill', glowFor(nd.collection));
+      halo.setAttribute('opacity', '0');
+      halo.setAttribute('class', 'node-halo');
+      g.appendChild(halo);
+
+      var circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('r', sizeFor(nd.degree));
+      circle.setAttribute('fill', 'url(#grad-' + nd.collection + ')');
       circle.setAttribute('stroke', 'var(--color-bg)');
-      circle.setAttribute('stroke-width', 2.5);
+      circle.setAttribute('stroke-width', '2');
       g.appendChild(circle);
+
       nodeGroup.appendChild(g);
+      nodeEls.push(g);
 
-      const label = document.createElementNS(ns, 'text');
-      label.setAttribute('class', 'graph-node-label');
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('y', -12);
-      label.setAttribute('opacity', 0.85);
-      label.setAttribute('font-size', '11');
-      label.setAttribute('font-weight', '500');
-      label.setAttribute('paint-order', 'stroke');
-      label.setAttribute('stroke', 'var(--color-bg)');
-      label.setAttribute('stroke-width', '3');
-      label.setAttribute('stroke-linecap', 'round');
-      label.setAttribute('stroke-linejoin', 'round');
-      label.textContent = n.title;
-      label.style.pointerEvents = 'none';
-      g.appendChild(label);
+      var lab = document.createElementNS(NS, 'text');
+      lab.setAttribute('class', 'graph-label');
+      lab.setAttribute('text-anchor', 'middle');
+      lab.setAttribute('opacity', '0');
+      lab.setAttribute('font-size', '10');
+      lab.setAttribute('font-weight', '500');
+      lab.setAttribute('fill', 'var(--color-text)');
+      lab.setAttribute('paint-order', 'stroke');
+      lab.setAttribute('stroke', 'var(--color-bg)');
+      lab.setAttribute('stroke-width', '3');
+      lab.setAttribute('stroke-linecap', 'round');
+      lab.setAttribute('stroke-linejoin', 'round');
+      lab.style.pointerEvents = 'none';
+      lab.textContent = nd.title;
+      labelGroup.appendChild(lab);
+      labelEls.push(lab);
+    }
 
-      g.addEventListener('click', (e) => {
-        // Only navigate if not dragging
-        if (wasDragging) return;
-        e.stopPropagation();
-        window.location.href = n.url;
-      });
-      g.addEventListener('mouseenter', () => { circle.setAttribute('r', 10); });
-      g.addEventListener('mouseleave', () => { circle.setAttribute('r', 7); });
+    // === Index by id ===
+    var nodeById = {};
+    for (var nbi = 0; nbi < nodes.length; nbi++) nodeById[nodes[nbi].id] = nodes[nbi];
 
-      return g;
-    });
+    // === Pan / zoom state ===
+    var viewX = 0, viewY = 0, scale = 1;
+    var MIN_SCALE = 0.15, MAX_SCALE = 6;
+    function updateView() {
+      var w = width / scale;
+      var h = height / scale;
+      svg.setAttribute('viewBox', viewX + ' ' + viewY + ' ' + w + ' ' + h);
+      updateMinimap();
+      updateLabelVisibility();
+    }
+    updateView();
 
-    // Force simulation (paused by default — only runs when needed)
-    let running = false;
-    let settleFrames = 0;
-    const MAX_SETTLE_FRAMES = 240;  // ~4 seconds at 60fps
+    function clientToSVG(cx, cy) {
+      var rect = svg.getBoundingClientRect();
+      return {
+        x: viewX + (cx - rect.left) * (width / scale) / rect.width,
+        y: viewY + (cy - rect.top) * (height / scale) / rect.height
+      };
+    }
+
+    // === Force simulation (lightweight) ===
+    var running = false;
+    var settleFrames = 0;
+    var MAX_SETTLE = 240;
+    var energy = 1;
 
     function tick() {
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        if (n.fx !== null) { n.x = n.fx; continue; }
-        // Repulsion
-        for (let j = 0; j < nodes.length; j++) {
+      energy = 0;
+      var n = nodes.length;
+      // Repulsion
+      for (var i = 0; i < n; i++) {
+        var node = nodes[i];
+        if (node.fx !== null) { node.x = node.fx; if (node.fy !== null) node.y = node.fy; continue; }
+        var fx = 0, fy = 0;
+        for (var j = 0; j < n; j++) {
           if (i === j) continue;
-          const m = nodes[j];
-          const dx = n.x - m.x;
-          const dy = n.y - m.y;
-          const d2 = dx * dx + dy * dy + 0.01;
-          const force = 6000 / d2;
-          n.vx += (dx / Math.sqrt(d2)) * force;
-          n.vy += (dy / Math.sqrt(d2)) * force;
+          var m = nodes[j];
+          var dx = node.x - m.x;
+          var dy = node.y - m.y;
+          var d2 = dx*dx + dy*dy + 0.5;
+          var force = 4500 / d2;
+          var d = Math.sqrt(d2);
+          fx += (dx / d) * force;
+          fy += (dy / d) * force;
         }
-        // Center attraction
-        n.vx += (width / 2 - n.x) * 0.001;
-        n.vy += (height / 2 - n.y) * 0.001;
+        var region = clusterRegions[node.collection];
+        if (region) {
+          fx += (region.cx - node.x) * 0.0008;
+          fy += (region.cy - node.y) * 0.0008;
+        } else {
+          fx += (width/2 - node.x) * 0.0008;
+          fy += (height/2 - node.y) * 0.0008;
+        }
+        node.vx = (node.vx + fx) * 0.78;
+        node.vy = (node.vy + fy) * 0.78;
       }
-      // Spring forces on edges
-      for (let i = 0; i < edges.length; i++) {
-        const e = edges[i];
-        const a = nodeById.get(e.source);
-        const b = nodeById.get(e.target);
+      // Springs on edges
+      for (var k2 = 0; k2 < edges.length; k2++) {
+        var e = edges[k2];
+        var a = nodeById[e.source];
+        var b = nodeById[e.target];
         if (!a || !b) continue;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
-        const target = 200;
-        const force = (d - target) * 0.04;
-        const fx = (dx / d) * force;
-        const fy = (dy / d) * force;
-        a.vx += fx; a.vy += fy;
-        b.vx -= fx; b.vy -= fy;
+        var dx2 = b.x - a.x;
+        var dy2 = b.y - a.y;
+        var d3 = Math.sqrt(dx2*dx2 + dy2*dy2) + 0.01;
+        var target = 80 + sizeFor(a.degree) + sizeFor(b.degree);
+        var force2 = (d3 - target) * 0.05;
+        var fx2 = (dx2 / d3) * force2;
+        var fy2 = (dy2 / d3) * force2;
+        a.vx += fx2; a.vy += fy2;
+        b.vx -= fx2; b.vy -= fy2;
       }
-      // Damping + integration
-      for (const n of nodes) {
-        if (n.fx !== null) { n.x = n.fx; n.y = n.fy || n.y; n.vx = 0; n.vy = 0; continue; }
-        n.vx *= 0.7; n.vy *= 0.7;
-        n.x += n.vx; n.y += n.vy;
-        n.x = Math.max(15, Math.min(width - 15, n.x));
-        n.y = Math.max(15, Math.min(height - 15, n.y));
+      // Integrate
+      for (var l = 0; l < n; l++) {
+        var nn = nodes[l];
+        if (nn.fx !== null) { nn.x = nn.fx; nn.y = nn.fy || nn.y; nn.vx = 0; nn.vy = 0; continue; }
+        nn.x += nn.vx; nn.y += nn.vy;
+        if (nn.x < 20) { nn.x = 20; nn.vx = 0; }
+        if (nn.x > width - 20) { nn.x = width - 20; nn.vx = 0; }
+        if (nn.y < 20) { nn.y = 20; nn.vy = 0; }
+        if (nn.y > height - 20) { nn.y = height - 20; nn.vy = 0; }
+        energy += Math.abs(nn.vx) + Math.abs(nn.vy);
       }
-      // Update SVG
-      for (let i = 0; i < edges.length; i++) {
-        const e = edges[i];
-        const a = nodeById.get(e.source);
-        const b = nodeById.get(e.target);
-        const el = linkEls[i];
-        el.setAttribute('x1', a.x);
-        el.setAttribute('y1', a.y);
-        el.setAttribute('x2', b.x);
-        el.setAttribute('y2', b.y);
+      // Update SVG transforms + link paths
+      for (var lk = 0; lk < linkEls.length; lk++) {
+        var e2 = edges[lk];
+        var a2 = nodeById[e2.source];
+        var b2 = nodeById[e2.target];
+        var mx = (a2.x + b2.x) / 2;
+        var my = (a2.y + b2.y) / 2;
+        var dx3 = b2.x - a2.x;
+        var dy3 = b2.y - a2.y;
+        var d4 = Math.sqrt(dx3*dx3 + dy3*dy3);
+        var curve = d4 * 0.05;
+        linkEls[lk].setAttribute('d', 'M ' + a2.x + ' ' + a2.y + ' Q ' + mx + ' ' + (my - curve) + ' ' + b2.x + ' ' + b2.y);
       }
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        nodeEls[i].setAttribute('transform', `translate(${n.x}, ${n.y})`);
+      for (var nt = 0; nt < nodeEls.length; nt++) {
+        nodeEls[nt].setAttribute('transform', 'translate(' + nodes[nt].x + ',' + nodes[nt].y + ')');
       }
       settleFrames++;
-      if (settleFrames >= MAX_SETTLE_FRAMES) {
+      if (energy < 0.5 || settleFrames >= MAX_SETTLE) {
         running = false;
         settleFrames = 0;
+        updateMinimap();
       }
     }
 
     function loop() {
-      if (running) tick();
+      if (running) {
+        try { tick(); }
+        catch (e) { console.error('Graph tick error:', e); running = false; }
+      }
       requestAnimationFrame(loop);
     }
     loop();
 
-    // === Pan / Zoom via SVG viewBox ===
-    let viewX = 0, viewY = 0, scale = 1;
-    const MIN_SCALE = 0.2, MAX_SCALE = 5;
-
-    function updateView() {
-      const w = width / scale;
-      const h = height / scale;
-      svg.setAttribute('viewBox', `${viewX} ${viewY} ${w} ${h}`);
-    }
-    updateView();
-
-    // Convert client coords to SVG coords
-    function clientToSVG(clientX, clientY) {
-      const rect = svg.getBoundingClientRect();
-      return {
-        x: viewX + (clientX - rect.left) * (width / scale) / rect.width,
-        y: viewY + (clientY - rect.top) * (height / scale) / rect.height,
-      };
-    }
-
-    // === Pointer-based pan (works for mouse + touch via PointerEvent) ===
-    let isPanning = false;
-    let isDraggingNode = false;
-    let draggedNode = null;
-    let panStart = { x: 0, y: 0, vx: 0, vy: 0 };
-    let wasDragging = false;
-    let dragStartTime = 0;
+    // === Pointer events ===
+    var isPanning = false, isDraggingNode = false, draggedNode = null, wasDragging = false;
+    var panStart = { x: 0, y: 0, vx: 0, vy: 0 };
+    var hoveredNode = null;
 
     function onPointerDown(e) {
-      // Find if click is on a node
-      const target = e.target.closest('.graph-node');
-      if (target && e.pointerType !== 'mouse' || (target && e.button === 0)) {
-        const id = target.dataset.id;
-        draggedNode = nodeById.get(id);
-        if (draggedNode) {
+      var t = e.target && e.target.closest ? e.target.closest('.graph-node') : null;
+      if (t && (e.button === 0 || e.pointerType !== 'mouse')) {
+        var id = t.getAttribute('data-id');
+        var dn = nodeById[id];
+        if (dn) {
           isDraggingNode = true;
           isPanning = false;
-          draggedNode.fx = draggedNode.x;
-          draggedNode.fy = draggedNode.y;
-          // Wake up simulation while dragging
-          running = true;
-          settleFrames = 0;
-          target.style.cursor = 'grabbing';
-          target.setPointerCapture(e.pointerId);
-          e.stopPropagation();
+          dn.fx = dn.x; dn.fy = dn.y;
+          running = true; settleFrames = 0;
+          try { t.setPointerCapture(e.pointerId); } catch (er) {}
+          if (e.stopPropagation) e.stopPropagation();
           return;
         }
       }
-      // Otherwise: pan
       isPanning = true;
       isDraggingNode = false;
       panStart = { x: e.clientX, y: e.clientY, vx: viewX, vy: viewY };
-      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
-      e.preventDefault();
+      try { svg.setPointerCapture(e.pointerId); } catch (er) {}
+      if (e.preventDefault) e.preventDefault();
     }
-
     function onPointerMove(e) {
       if (isDraggingNode && draggedNode) {
-        const p = clientToSVG(e.clientX, e.clientY);
-        draggedNode.fx = p.x;
-        draggedNode.fy = p.y;
+        var p = clientToSVG(e.clientX, e.clientY);
+        draggedNode.fx = p.x; draggedNode.fy = p.y;
         wasDragging = true;
-        // Keep simulation running
         settleFrames = 0;
         return;
       }
       if (isPanning) {
-        const rect = svg.getBoundingClientRect();
-        const dx = (e.clientX - panStart.x) * (width / scale) / rect.width;
-        const dy = (e.clientY - panStart.y) * (height / scale) / rect.height;
+        var rect = svg.getBoundingClientRect();
+        var dx = (e.clientX - panStart.x) * (width / scale) / rect.width;
+        var dy = (e.clientY - panStart.y) * (height / scale) / rect.height;
         viewX = panStart.vx - dx;
         viewY = panStart.vy - dy;
         updateView();
       }
     }
-
     function onPointerUp(e) {
       if (isDraggingNode && draggedNode) {
-        // Release fixed position
-        draggedNode.fx = null;
-        draggedNode.fy = null;
+        draggedNode.fx = null; draggedNode.fy = null;
         draggedNode = null;
-        // Wake simulation briefly to settle
-        running = true;
-        settleFrames = 0;
+        running = true; settleFrames = 0;
       }
-      isPanning = false;
-      isDraggingNode = false;
-      try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
-      // Reset wasDragging after a tick
-      setTimeout(() => { wasDragging = false; }, 50);
+      isPanning = false; isDraggingNode = false;
+      try { if (e && e.pointerId !== undefined) svg.releasePointerCapture(e.pointerId); } catch (er) {}
+      setTimeout(function() { wasDragging = false; }, 50);
     }
-
     svg.addEventListener('pointerdown', onPointerDown);
     svg.addEventListener('pointermove', onPointerMove);
     svg.addEventListener('pointerup', onPointerUp);
     svg.addEventListener('pointercancel', onPointerUp);
-    svg.addEventListener('pointerleave', onPointerUp);
 
-    // === Fallback: touch event handlers for browsers/tests that don't fire pointer events from touch ===
-    svg.addEventListener('touchstart', (e) => {
-      // Skip pinch handling — multi-touch goes to pinch handler
+    // === Touch fallback ===
+    svg.addEventListener('touchstart', function(e) {
       if (e.touches.length > 1) return;
-      const t = e.touches[0];
-      if (!t) return;
-      onPointerDown({ clientX: t.clientX, clientY: t.clientY, target: e.target, button: 0, preventDefault: () => e.preventDefault() });
+      var t = e.touches[0]; if (!t) return;
+      onPointerDown({ clientX: t.clientX, clientY: t.clientY, target: e.target, button: 0, pointerId: 0, preventDefault: function(){ e.preventDefault(); }, stopPropagation: function(){ e.stopPropagation(); } });
     }, { passive: false });
-    svg.addEventListener('touchmove', (e) => {
+    svg.addEventListener('touchmove', function(e) {
       if (e.touches.length > 1) return;
-      const t = e.touches[0];
-      if (!t) return;
+      var t = e.touches[0]; if (!t) return;
       onPointerMove({ clientX: t.clientX, clientY: t.clientY });
       if (isPanning) e.preventDefault();
     }, { passive: false });
-    svg.addEventListener('touchend', (e) => {
-      onPointerUp({});
-    });
-    svg.addEventListener('touchcancel', (e) => {
-      onPointerUp({});
-    });
+    svg.addEventListener('touchend', function() { onPointerUp({}); });
+    svg.addEventListener('touchcancel', function() { onPointerUp({}); });
 
-    // === Wheel zoom (mouse + trackpad) ===
-    svg.addEventListener('wheel', (e) => {
+    // === Wheel zoom ===
+    svg.addEventListener('wheel', function(e) {
       e.preventDefault();
-      const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
-      // Zoom towards mouse position
-      const p = clientToSVG(e.clientX, e.clientY);
-      const newW = width / newScale;
-      const newH = height / newScale;
-      const rect = svg.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width;
-      const py = (e.clientY - rect.top) / rect.height;
+      var factor = e.deltaY > 0 ? 1.1 : 0.9;
+      var newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+      var p = clientToSVG(e.clientX, e.clientY);
+      var newW = width / newScale;
+      var newH = height / newScale;
+      var rect = svg.getBoundingClientRect();
+      var px = (e.clientX - rect.left) / rect.width;
+      var py = (e.clientY - rect.top) / rect.height;
       viewX = p.x - px * newW;
       viewY = p.y - py * newH;
       scale = newScale;
       updateView();
     }, { passive: false });
 
-    // === Touch pinch zoom (multi-finger) ===
-    const activeTouches = new Map();
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-    let pinchCenter = null;
-
-    function onTouchStart(e) {
-      for (const t of e.changedTouches) {
+    // === Pinch zoom ===
+    var activeTouches = new Map();
+    var pinchStartDist = 0, pinchStartScale = 1, pinchCenter = null;
+    svg.addEventListener('touchstart', function(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
         activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY });
       }
       if (activeTouches.size === 2) {
-        // Start pinch
-        const t1 = Array.from(activeTouches.values())[0];
-        const t2 = Array.from(activeTouches.values())[1];
-        const dx = t2.x - t1.x;
-        const dy = t2.y - t1.y;
-        pinchStartDist = Math.sqrt(dx * dx + dy * dy);
+        var arr = Array.from(activeTouches.values());
+        var dx = arr[1].x - arr[0].x;
+        var dy = arr[1].y - arr[0].y;
+        pinchStartDist = Math.sqrt(dx*dx + dy*dy);
         pinchStartScale = scale;
-        pinchCenter = { x: (t1.x + t2.x) / 2, y: (t1.y + t2.y) / 2 };
-        // Cancel any pan
+        pinchCenter = { x: (arr[0].x + arr[1].x) / 2, y: (arr[0].y + arr[1].y) / 2 };
         isPanning = false;
       }
-    }
-    function onTouchMove(e) {
-      for (const t of e.changedTouches) {
-        const cur = activeTouches.get(t.identifier);
+    }, { passive: false });
+    svg.addEventListener('touchmove', function(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        var cur = activeTouches.get(t.identifier);
         if (cur) { cur.x = t.clientX; cur.y = t.clientY; }
       }
       if (activeTouches.size === 2 && pinchStartDist > 0) {
         e.preventDefault();
-        const t1 = Array.from(activeTouches.values())[0];
-        const t2 = Array.from(activeTouches.values())[1];
-        const dx = t2.x - t1.x;
-        const dy = t2.y - t1.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pinchStartScale * (dist / pinchStartDist)));
-        // Zoom towards pinch center
-        const rect = svg.getBoundingClientRect();
-        const c = pinchCenter;
-        const p = clientToSVG(c.x, c.y);
-        const newW = width / newScale;
-        const newH = height / newScale;
-        const px = (c.x - rect.left) / rect.width;
-        const py = (c.y - rect.top) / rect.height;
+        var arr2 = Array.from(activeTouches.values());
+        var dx2 = arr2[1].x - arr2[0].x;
+        var dy2 = arr2[1].y - arr2[0].y;
+        var dist = Math.sqrt(dx2*dx2 + dy2*dy2);
+        var newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pinchStartScale * (dist / pinchStartDist)));
+        var rect = svg.getBoundingClientRect();
+        var c = pinchCenter;
+        var p = clientToSVG(c.x, c.y);
+        var newW = width / newScale;
+        var newH = height / newScale;
+        var px = (c.x - rect.left) / rect.width;
+        var py = (c.y - rect.top) / rect.height;
         viewX = p.x - px * newW;
         viewY = p.y - py * newH;
         scale = newScale;
         updateView();
       }
+    }, { passive: false });
+    svg.addEventListener('touchend', function(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) activeTouches.delete(e.changedTouches[i].identifier);
+      if (activeTouches.size < 2) { pinchStartDist = 0; pinchCenter = null; }
+    });
+    svg.addEventListener('touchcancel', function(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) activeTouches.delete(e.changedTouches[i].identifier);
+      if (activeTouches.size < 2) { pinchStartDist = 0; pinchCenter = null; }
+    });
+
+    // === Zoom buttons ===
+    var zIn = document.getElementById('zoom-in');
+    var zOut = document.getElementById('zoom-out');
+    var zReset = document.getElementById('zoom-reset');
+    if (zIn) zIn.addEventListener('click', function() { scale = Math.min(MAX_SCALE, scale * 1.2); updateView(); });
+    if (zOut) zOut.addEventListener('click', function() { scale = Math.max(MIN_SCALE, scale * 0.83); updateView(); });
+    if (zReset) zReset.addEventListener('click', function() { scale = 1; viewX = 0; viewY = 0; updateView(); });
+
+    // === Fullscreen ===
+    var fsBtn = document.getElementById('fullscreen-btn');
+    if (fsBtn) fsBtn.addEventListener('click', function() {
+      container.classList.toggle('is-fullscreen');
+      setTimeout(function() { measure(); updateView(); }, 50);
+    });
+
+    // === Layout switcher ===
+    var layoutBtns = document.querySelectorAll('.layout-btn');
+    function applyLayout(layout) {
+      if (layout === 'cluster') {
+        for (var i = 0; i < nodes.length; i++) {
+          var nd = nodes[i];
+          var region = clusterRegions[nd.collection] || { cx: width/2, cy: height/2, r: 100 };
+          var ang = Math.random() * Math.PI * 2;
+          var dist = Math.sqrt(Math.random()) * region.r;
+          nd.x = region.cx + Math.cos(ang) * dist;
+          nd.y = region.cy + Math.sin(ang) * dist;
+          nd.vx = (Math.random() - 0.5) * 4;
+          nd.vy = (Math.random() - 0.5) * 4;
+          nd.fx = null; nd.fy = null;
+        }
+      } else if (layout === 'radial') {
+        var sorted = nodes.slice().sort(function(a, b) { return b.degree - a.degree; });
+        var cx = width/2, cy = height/2;
+        for (var ri = 0; ri < sorted.length; ri++) {
+          var n2 = sorted[ri];
+          var t = ri / sorted.length;
+          var rr = 60 + t * Math.min(width, height) * 0.45;
+          var ang2 = ri * 0.5;
+          n2.x = cx + Math.cos(ang2) * rr;
+          n2.y = cy + Math.sin(ang2) * rr;
+          n2.vx = (Math.random() - 0.5) * 4;
+          n2.vy = (Math.random() - 0.5) * 4;
+          n2.fx = null; n2.fy = null;
+        }
+      } else if (layout === 'force') {
+        for (var fi = 0; fi < nodes.length; fi++) {
+          nodes[fi].x = Math.random() * width;
+          nodes[fi].y = Math.random() * height;
+          nodes[fi].vx = (Math.random() - 0.5) * 12;
+          nodes[fi].vy = (Math.random() - 0.5) * 12;
+          nodes[fi].fx = null; nodes[fi].fy = null;
+        }
+      }
+      running = true; settleFrames = 0;
     }
-    function onTouchEnd(e) {
-      for (const t of e.changedTouches) {
-        activeTouches.delete(t.identifier);
+    layoutBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        layoutBtns.forEach(function(b) { b.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+        applyLayout(btn.getAttribute('data-layout'));
+      });
+    });
+
+    // === Filter chips ===
+    var chips = document.querySelectorAll('.chip');
+    function applyFilter(filterCol) {
+      for (var i = 0; i < nodes.length; i++) {
+        var n3 = nodes[i];
+        var visible = !filterCol || n3.collection === filterCol;
+        nodeEls[i].style.opacity = visible ? '1' : '0.08';
+        nodeEls[i].style.pointerEvents = visible ? 'auto' : 'none';
       }
-      if (activeTouches.size < 2) {
-        pinchStartDist = 0;
-        pinchCenter = null;
+      for (var j = 0; j < edges.length; j++) {
+        var e3 = edges[j];
+        var a3 = nodeById[e3.source];
+        var b3 = nodeById[e3.target];
+        var aVis = !filterCol || a3.collection === filterCol;
+        var bVis = !filterCol || b3.collection === filterCol;
+        linkEls[j].setAttribute('stroke-opacity', (aVis && bVis) ? '0.16' : '0.02');
+      }
+      if (filterCol) {
+        for (var k = 0; k < nodes.length; k++) {
+          if (nodes[k].collection === filterCol) {
+            var region = clusterRegions[nodes[k].collection];
+            if (region) {
+              nodes[k].vx += (region.cx - nodes[k].x) * 0.01;
+              nodes[k].vy += (region.cy - nodes[k].y) * 0.01;
+            }
+          }
+        }
+        running = true; settleFrames = 0;
+      }
+    }
+    chips.forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        chips.forEach(function(c) { c.classList.remove('is-active'); c.setAttribute('aria-pressed', 'false'); });
+        chip.classList.add('is-active');
+        chip.setAttribute('aria-pressed', 'true');
+        applyFilter(chip.getAttribute('data-filter') || '');
+      });
+    });
+
+    // === Search ===
+    var search = document.getElementById('graph-search');
+    var results = document.getElementById('search-results');
+    var currentFocus = -1;
+
+    function showResults(q) {
+      q = (q || '').toLowerCase().trim();
+      if (!q) {
+        results.hidden = true;
+        applySearchHighlight(null);
+        return;
+      }
+      var matches = [];
+      for (var i = 0; i < nodes.length; i++) {
+        var n4 = nodes[i];
+        var titleMatch = n4.title.toLowerCase().indexOf(q) >= 0 ? 2 : -1;
+        var descMatch = (n4.description || '').toLowerCase().indexOf(q) >= 0 ? 1 : -1;
+        var score = Math.max(titleMatch, descMatch);
+        if (score > 0) matches.push({ n: n4, score: score });
+      }
+      matches.sort(function(a, b) { return b.score - a.score; });
+      matches = matches.slice(0, 8);
+
+      if (matches.length === 0) {
+        results.innerHTML = '<div class="search-result" style="cursor:default;color:var(--color-text-muted);">No matches</div>';
+        results.hidden = false;
+        applySearchHighlight(null);
+        return;
+      }
+
+      var escQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var html = '';
+      for (var k2 = 0; k2 < matches.length; k2++) {
+        var m = matches[k2];
+        var title = m.n.title.replace(/[<>&"]/g, function(c) { return ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' })[c]; });
+        var re = new RegExp('(' + escQ + ')', 'gi');
+        var highlighted = title.replace(re, '<mark>$1</mark>');
+        html += '<a class="search-result" data-id="' + m.n.id + '" href="' + m.n.url + '">' +
+          '<span class="res-dot" style="background:' + colorFor(m.n.collection) + ';"></span>' +
+          '<span class="res-title">' + highlighted + '</span>' +
+          '<span class="res-degree">' + (m.n.degree || 0) + '</span>' +
+          '</a>';
+      }
+      results.innerHTML = html;
+      results.hidden = false;
+      applySearchHighlight(matches.map(function(m) { return m.n.id; }));
+      currentFocus = -1;
+    }
+
+    function applySearchHighlight(ids) {
+      if (!ids) {
+        for (var i = 0; i < nodeEls.length; i++) {
+          nodeEls[i].style.opacity = '1';
+          nodeEls[i].querySelectorAll('circle')[1].setAttribute('opacity', '1');
+        }
+        for (var j = 0; j < linkEls.length; j++) linkEls[j].setAttribute('stroke-opacity', '0.16');
+        return;
+      }
+      var idSet = {};
+      for (var k = 0; k < ids.length; k++) idSet[ids[k]] = 1;
+      for (var i2 = 0; i2 < nodes.length; i2++) {
+        var n5 = nodes[i2];
+        var isMatch = idSet[n5.id];
+        var isRelated = false;
+        for (var e4 = 0; e4 < edges.length; e4++) {
+          var ed = edges[e4];
+          if ((ed.source === n5.id && idSet[ed.target]) || (ed.target === n5.id && idSet[ed.source])) { isRelated = true; break; }
+        }
+        if (isMatch) {
+          nodeEls[i2].style.opacity = '1';
+          nodeEls[i2].querySelectorAll('circle')[1].setAttribute('opacity', '1');
+        } else if (isRelated) {
+          nodeEls[i2].style.opacity = '0.7';
+          nodeEls[i2].querySelectorAll('circle')[1].setAttribute('opacity', '0.7');
+        } else {
+          nodeEls[i2].style.opacity = '0.12';
+          nodeEls[i2].querySelectorAll('circle')[1].setAttribute('opacity', '0.4');
+        }
+      }
+      for (var j2 = 0; j2 < edges.length; j2++) {
+        var ed2 = edges[j2];
+        var inMatch = idSet[ed2.source] || idSet[ed2.target];
+        linkEls[j2].setAttribute('stroke-opacity', inMatch ? '0.6' : '0.05');
       }
     }
 
-    svg.addEventListener('touchstart', onTouchStart, { passive: false });
-    svg.addEventListener('touchmove', onTouchMove, { passive: false });
-    svg.addEventListener('touchend', onTouchEnd);
-    svg.addEventListener('touchcancel', onTouchEnd);
-
-    // === Action buttons ===
-    document.getElementById('graph-zoom-in').addEventListener('click', () => {
-      scale = Math.min(MAX_SCALE, scale * 1.2);
-      updateView();
-    });
-    document.getElementById('graph-zoom-out').addEventListener('click', () => {
-      scale = Math.max(MIN_SCALE, scale * 0.83);
-      updateView();
-    });
-    document.getElementById('graph-zoom-reset').addEventListener('click', () => {
-      scale = 1;
-      viewX = 0;
-      viewY = 0;
-      updateView();
-    });
-
-    // === Search & filter ===
-    const search = document.getElementById('graph-search');
-    const collection = document.getElementById('graph-collection');
-    function applyFilter() {
-      const q = search.value.toLowerCase();
-      const c = collection.value;
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        const matches = (!q || n.title.toLowerCase().includes(q)) && (!c || n.collection === c);
-        nodeEls[i].style.opacity = matches ? 1 : 0.15;
-      }
-      for (let i = 0; i < edges.length; i++) {
-        const e = edges[i];
-        const a = nodeById.get(e.source);
-        const b = nodeById.get(e.target);
-        const aVis = nodeEls[nodes.indexOf(a)].style.opacity !== '0.15';
-        const bVis = nodeEls[nodes.indexOf(b)].style.opacity !== '0.15';
-        linkEls[i].style.opacity = (aVis && bVis) ? 0.5 : 0.05;
-      }
-    }
-    search.addEventListener('input', applyFilter);
-    collection.addEventListener('change', applyFilter);
-
-    // === Auto-settle once on load, then go quiet ===
-    running = true;
-    settleFrames = 0;
-
-    // === Resize ===
-    const resizeObserver = new ResizeObserver(() => {
-      measure();
-      svg.setAttribute('width', String(width));
-      svg.setAttribute('height', String(height));
-      updateView();
-    });
-    resizeObserver.observe(container);
-
-    // === Auto-hide hint after 5s ===
-    const hint = document.getElementById('graph-hint');
-    const legendToggle = document.getElementById('graph-legend-toggle');
-    const legend = document.getElementById('graph-legend');
-    setTimeout(() => hint?.classList.add('hidden'), 5000);
-    container.addEventListener('pointerdown', () => {
-      hint?.classList.add('hidden');
-    }, { once: true });
-
-    // === Legend toggle ===
-    if (legendToggle && legend) {
-      legendToggle.addEventListener('click', () => {
-        const isOpen = legendToggle.getAttribute('aria-expanded') === 'true';
-        legendToggle.setAttribute('aria-expanded', String(!isOpen));
-        legend.hidden = isOpen;
+    if (search) {
+      search.addEventListener('input', function() { showResults(search.value); });
+      search.addEventListener('focus', function() { if (search.value) showResults(search.value); });
+      search.addEventListener('blur', function() { setTimeout(function() { results.hidden = true; }, 150); });
+      search.addEventListener('keydown', function(e) {
+        var items = results.querySelectorAll('.search-result[data-id]');
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          currentFocus = Math.min(items.length - 1, currentFocus + 1);
+          items.forEach(function(it, i) { it.classList.toggle('is-focused', i === currentFocus); });
+          if (items[currentFocus] && items[currentFocus].scrollIntoView) items[currentFocus].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          currentFocus = Math.max(0, currentFocus - 1);
+          items.forEach(function(it, i) { it.classList.toggle('is-focused', i === currentFocus); });
+          if (items[currentFocus] && items[currentFocus].scrollIntoView) items[currentFocus].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter' && currentFocus >= 0) {
+          if (items[currentFocus]) items[currentFocus].click();
+        } else if (e.key === 'Escape') {
+          search.value = '';
+          results.hidden = true;
+          applySearchHighlight(null);
+        }
       });
     }
-    } // end init()
-  })();
+
+    // === Preview card ===
+    var preview = document.getElementById('graph-preview');
+    var previewTitle = document.getElementById('preview-title');
+    var previewDesc = document.getElementById('preview-description');
+    var previewCol = document.getElementById('preview-collection');
+    var previewDegree = document.getElementById('preview-degree');
+    var previewLink = document.getElementById('preview-link');
+    var previewClose = document.getElementById('preview-close');
+    function showPreview(n) {
+      previewCol.textContent = (collectionStyles[n.collection] && collectionStyles[n.collection].label) || n.collection;
+      previewCol.style.color = colorFor(n.collection);
+      previewCol.style.borderColor = colorFor(n.collection);
+      previewTitle.textContent = n.title;
+      previewDesc.textContent = n.description || 'No description available.';
+      previewDegree.textContent = (n.degree || 0) + ' connection' + (n.degree === 1 ? '' : 's');
+      previewLink.href = n.url;
+      preview.hidden = false;
+    }
+    if (previewClose) previewClose.addEventListener('click', function() { preview.hidden = true; });
+
+    function setLabel(n, idx, visible) {
+      var lab = labelEls[idx];
+      lab.setAttribute('opacity', visible ? '1' : '0');
+      lab.setAttribute('x', n.x);
+      lab.setAttribute('y', n.y - sizeFor(n.degree) - 4);
+    }
+
+    function updateLabelVisibility() {
+      var visibleIds = {};
+      if (hoveredNode) {
+        visibleIds[hoveredNode.id] = 1;
+        for (var i = 0; i < edges.length; i++) {
+          var e = edges[i];
+          if (e.source === hoveredNode.id) visibleIds[e.target] = 1;
+          if (e.target === hoveredNode.id) visibleIds[e.source] = 1;
+        }
+      }
+      var showAll = scale > 1.8;
+      for (var k = 0; k < nodes.length; k++) {
+        var n = nodes[k];
+        var isVisible = showAll || visibleIds[n.id];
+        if (isVisible) {
+          var w = width / scale, h = height / scale;
+          var inView = n.x >= viewX && n.x <= viewX + w && n.y >= viewY && n.y <= viewY + h;
+          setLabel(n, k, inView);
+        } else {
+          labelEls[k].setAttribute('opacity', '0');
+        }
+      }
+    }
+
+    // === Hover handlers ===
+    for (var h = 0; h < nodeEls.length; h++) {
+      (function(idx) {
+        var el = nodeEls[idx];
+        var n = nodes[idx];
+        el.addEventListener('mouseenter', function() {
+          hoveredNode = n;
+          var halo = el.querySelector('.node-halo');
+          if (halo) halo.setAttribute('opacity', '1');
+          el.querySelectorAll('circle')[1].setAttribute('stroke-width', '3');
+          showPreview(n);
+          updateLabelVisibility();
+          for (var j = 0; j < edges.length; j++) {
+            var e = edges[j];
+            if (e.source === n.id || e.target === n.id) {
+              linkEls[j].setAttribute('stroke', colorFor(n.collection));
+              linkEls[j].setAttribute('stroke-opacity', '0.7');
+              linkEls[j].setAttribute('stroke-width', '1.6');
+            } else {
+              linkEls[j].setAttribute('stroke-opacity', '0.05');
+            }
+          }
+          var neighborIds = {};
+          neighborIds[n.id] = 1;
+          for (var e2 = 0; e2 < edges.length; e2++) {
+            if (edges[e2].source === n.id) neighborIds[edges[e2].target] = 1;
+            if (edges[e2].target === n.id) neighborIds[edges[e2].source] = 1;
+          }
+          for (var k3 = 0; k3 < nodeEls.length; k3++) {
+            if (!neighborIds[nodes[k3].id]) nodeEls[k3].style.opacity = '0.18';
+          }
+        });
+        el.addEventListener('mouseleave', function() {
+          if (hoveredNode === n) {
+            hoveredNode = null;
+            preview.hidden = true;
+            var halo = el.querySelector('.node-halo');
+            if (halo) halo.setAttribute('opacity', '0');
+            el.querySelectorAll('circle')[1].setAttribute('stroke-width', '2');
+            for (var j2 = 0; j2 < edges.length; j2++) {
+              linkEls[j2].setAttribute('stroke', 'var(--color-text-muted)');
+              linkEls[j2].setAttribute('stroke-opacity', '0.16');
+              linkEls[j2].setAttribute('stroke-width', '1');
+            }
+            for (var k4 = 0; k4 < nodeEls.length; k4++) nodeEls[k4].style.opacity = '1';
+            updateLabelVisibility();
+          }
+        });
+        el.addEventListener('click', function(e) {
+          if (wasDragging) return;
+          e.stopPropagation();
+          window.location.href = n.url;
+        });
+      })(h);
+    }
+
+    // === Hub list clicks ===
+    var hubLinks = document.querySelectorAll('.hub-link');
+    hubLinks.forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        var id = link.getAttribute('data-id');
+        var n6 = nodeById[id];
+        if (!n6) return;
+        var w = width / scale, h = height / scale;
+        viewX = n6.x - w/2;
+        viewY = n6.y - h/2;
+        scale = 1.5;
+        updateView();
+        for (var i = 0; i < nodes.length; i++) {
+          if (nodes[i].id === id) {
+            var el2 = nodeEls[i];
+            var halo2 = el2.querySelector('.node-halo');
+            if (halo2) {
+              halo2.setAttribute('opacity', '1');
+              setTimeout(function() { halo2.setAttribute('opacity', '0'); }, 1200);
+            }
+            break;
+          }
+        }
+        setTimeout(function() { window.location.href = n6.url; }, 600);
+      });
+    });
+
+    // === Hubs panel toggle ===
+    var hubsEl = document.getElementById('graph-hubs');
+    var hubsToggle = document.getElementById('hubs-toggle');
+    if (hubsEl && hubsToggle) {
+      hubsToggle.addEventListener('click', function() {
+        var collapsed = hubsEl.classList.toggle('is-collapsed');
+        hubsToggle.setAttribute('aria-expanded', String(!collapsed));
+        hubsToggle.textContent = collapsed ? '⊞' : '×';
+      });
+    }
+
+    // === Minimap ===
+    var minimapSvg = document.getElementById('minimap-svg');
+    var minimapViewport = document.getElementById('minimap-viewport');
+    var minimapNodeGroup, minimapLinkGroup;
+    var MM_W = 200, MM_H = 130, MM_PAD = 8;
+    function setupMinimap() {
+      if (minimapLinkGroup) minimapLinkGroup.innerHTML = '';
+      if (minimapNodeGroup) minimapNodeGroup.innerHTML = '';
+      minimapLinkGroup = document.createElementNS(NS, 'g');
+      minimapNodeGroup = document.createElementNS(NS, 'g');
+      minimapSvg.appendChild(minimapLinkGroup);
+      minimapSvg.appendChild(minimapNodeGroup);
+      var sX = (MM_W - MM_PAD*2) / width;
+      var sY = (MM_H - MM_PAD*2) / height;
+      for (var i = 0; i < edges.length; i++) {
+        var a = nodeById[edges[i].source];
+        var b = nodeById[edges[i].target];
+        if (!a || !b) continue;
+        var line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', MM_PAD + a.x * sX);
+        line.setAttribute('y1', MM_PAD + a.y * sY);
+        line.setAttribute('x2', MM_PAD + b.x * sX);
+        line.setAttribute('y2', MM_PAD + b.y * sY);
+        line.setAttribute('stroke', 'var(--color-text-muted)');
+        line.setAttribute('stroke-width', '0.3');
+        line.setAttribute('stroke-opacity', '0.5');
+        minimapLinkGroup.appendChild(line);
+      }
+      for (var j = 0; j < nodes.length; j++) {
+        var n7 = nodes[j];
+        var c = document.createElementNS(NS, 'circle');
+        c.setAttribute('cx', MM_PAD + n7.x * sX);
+        c.setAttribute('cy', MM_PAD + n7.y * sY);
+        c.setAttribute('r', Math.max(1, sizeFor(n7.degree) * 0.5));
+        c.setAttribute('fill', colorFor(n7.collection));
+        minimapNodeGroup.appendChild(c);
+      }
+    }
+    function updateMinimap() {
+      if (!minimapNodeGroup) return;
+      var sX = (MM_W - MM_PAD*2) / width;
+      var sY = (MM_H - MM_PAD*2) / height;
+      for (var i = 0; i < nodes.length; i++) {
+        var c = minimapNodeGroup.children[i];
+        if (c) {
+          c.setAttribute('cx', MM_PAD + nodes[i].x * sX);
+          c.setAttribute('cy', MM_PAD + nodes[i].y * sY);
+        }
+      }
+      var vw = (width / scale) * sX;
+      var vh = (height / scale) * sY;
+      minimapViewport.style.left = (MM_PAD + viewX * sX) + 'px';
+      minimapViewport.style.top = (MM_PAD + viewY * sY) + 'px';
+      minimapViewport.style.width = vw + 'px';
+      minimapViewport.style.height = vh + 'px';
+    }
+    setupMinimap();
+    updateMinimap();
+
+    minimapSvg.parentElement.addEventListener('click', function(e) {
+      var rect = minimapSvg.getBoundingClientRect();
+      var sX = (MM_W - MM_PAD*2) / width;
+      var sY = (MM_H - MM_PAD*2) / height;
+      var mx = e.clientX - rect.left - MM_PAD;
+      var my = e.clientY - rect.top - MM_PAD;
+      viewX = mx / sX - (width / scale) / 2;
+      viewY = my / sY - (height / scale) / 2;
+      updateView();
+    });
+
+    // === Resize ===
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(function() {
+        measure();
+        setupMinimap();
+        updateView();
+      });
+      ro.observe(container);
+    }
+
+    // === Auto-settle on load ===
+    running = true; settleFrames = 0;
+
+    // === Auto-hide hint ===
+    var hint = document.getElementById('graph-hint');
+    if (hint) {
+      setTimeout(function() { hint.classList.add('hidden'); }, 6000);
+      container.addEventListener('pointerdown', function() { hint.classList.add('hidden'); }, { once: true });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
 </script>
