@@ -2,9 +2,11 @@
 
 > A personal knowledge base that feels like reading an old encyclopedia — built with Astro 5, Markdown-first, mobile-first, zero JavaScript by default.
 
-**Live demo:** https://llm-wiki-5y3.pages.dev
+**Live demo:** https://wiki.h3n.my.id
 
 Inspired by **Obsidian Publish**, **Tolkien Gateway**, and the **digital garden** tradition. Articles, concepts, research, and the connections between them — all rendered as static HTML, served from the edge.
+
+📝 **[Changelog](./CHANGELOG.md)** — Riwayat rilis lengkap
 
 ---
 
