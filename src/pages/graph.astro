@@ -506,14 +506,21 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
 
     // === Render ===
     function render() {
-      // Clear
-      ctx.fillStyle = THEME.bg;
-      ctx.fillRect(0, 0, viewWidth, viewHeight);
-
-      // Save & transform
+      // CRITICAL: ctx already has DPR transform set by resize().
+      // To clear the entire canvas, use save/reset/fill/restore pattern.
       ctx.save();
-      ctx.scale(scale, scale);
-      ctx.translate(-viewX, -viewY);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);  // reset to identity (ignores DPR for this op)
+      ctx.fillStyle = THEME.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);  // fill ENTIRE canvas (DPR-scaled)
+      ctx.restore();
+      // Now ctx is back to the DPR-scaled transform set by resize()
+
+      // Save & transform — wrap in try/finally so ctx.restore() always runs
+      // (prevents transform stack corruption if any drawing throws)
+      ctx.save();
+      try {
+        ctx.scale(scale, scale);
+        ctx.translate(-viewX, -viewY);
 
       // === Cluster regions (background) ===
       for (var rk in regions) {
@@ -798,11 +805,14 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         window.__labelCount = (window.__labelCount || 0) + 1;
       }
 
-      ctx.restore();
+      } finally {
+        // Always restore, even if drawing throws — prevents transform stack corruption
+        ctx.restore();
+      }
     }
 
     // === On-demand render loop (only when needed) ===
-    // Refresh theme on every render so theme toggles are instant
+    // Single render chain — both tick and tickDrag use the same needsRender flag
     var lastThemeCheck = 0;
     function tick() {
       rafId = 0;
@@ -817,7 +827,13 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
       }
       if (needsRender) {
         needsRender = false;
-        render();
+        try {
+          render();
+        } catch (err) {
+          // If render fails, ensure canvas doesn't get stuck in a broken state
+          console.error('render error:', err);
+          try { ctx.setTransform(1, 0, 0, 1, 0, 0); } catch (e) {}
+        }
       }
     }
     function requestRender() {
@@ -825,12 +841,17 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
       if (!rafId) rafId = requestAnimationFrame(tick);
     }
 
-    // === Drag handling (high frequency) ===
+    // === Drag handling — single unified chain ===
+    // tickDrag just re-schedules itself while a drag is active; tick() does the actual render
     function tickDrag() {
+      rafId = 0;
       if (draggedNode) {
         requestRender();
         rafId = requestAnimationFrame(tickDrag);
       }
+    }
+    function startDragLoop() {
+      if (!rafId) rafId = requestAnimationFrame(tickDrag);
     }
 
     // === Init ===
@@ -857,7 +878,7 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         canvas.classList.add('is-dragging');
         try { canvas.setPointerCapture(e.pointerId); } catch (er) {}
         // Start render loop for drag
-        if (!rafId) rafId = requestAnimationFrame(tickDrag);
+        startDragLoop();
         return;
       }
       // Pan (drag empty space)
