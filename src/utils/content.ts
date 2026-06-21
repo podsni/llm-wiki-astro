@@ -329,5 +329,114 @@ export async function getGraphData() {
   }
   const nodesWithDegree = nodes.map(n => ({ ...n, degree: degree[n.id] || 0 }));
 
-  return { nodes: nodesWithDegree, edges };
+  // Pre-compute layout (cluster by collection) — runs once at build time.
+  // Use a generous canvas size so all clusters have room; the client will
+  // fitToView on initial render to scale appropriately.
+  const layout = computeClusterLayout(nodesWithDegree, 1400, 900);
+  nodesWithDegree.forEach((n, i) => {
+    n.x = layout.positions[i].x;
+    n.y = layout.positions[i].y;
+  });
+
+  return { nodes: nodesWithDegree, edges, regions: layout.regions };
+}
+
+/**
+ * Compute a stable cluster-by-collection layout.
+ * Each collection gets a region in a 3×3 grid (sized by node count),
+ * and nodes are placed in concentric circles within their region.
+ * Returns pre-computed positions + region centers (in graph coords).
+ */
+function computeClusterLayout(
+  nodes: { id: string; collection: string; degree: number }[],
+  width: number,
+  height: number
+): { positions: { x: number; y: number }[]; regions: Record<string, { cx: number; cy: number; r: number; count: number }> } {
+  const collections = Array.from(new Set(nodes.map(n => n.collection)));
+
+  // Group nodes by collection
+  const byCollection: Record<string, typeof nodes> = {};
+  for (const n of nodes) {
+    if (!byCollection[n.collection]) byCollection[n.collection] = [];
+    byCollection[n.collection].push(n);
+  }
+  for (const c of collections) {
+    byCollection[c].sort((a, b) => b.degree - a.degree);
+  }
+
+  const counts = collections.map(c => byCollection[c].length);
+  const maxCount = Math.max(...counts);
+  const minCount = Math.min(...counts);
+
+  // Layout: 3x3 grid, larger spacing for better fit
+  const layoutW = width * 0.9;
+  const layoutH = height * 0.9;
+  const startX = (width - layoutW) / 2;
+  const startY = (height - layoutH) / 2;
+
+  const cols = Math.min(3, Math.ceil(Math.sqrt(collections.length)));
+  const rows = Math.ceil(collections.length / cols);
+  const cellW = layoutW / cols;
+  const cellH = layoutH / rows;
+  // Larger base radius so smaller clusters still have room
+  const cellMaxR = Math.min(cellW, cellH) * 0.45;
+
+  // Compute region size per collection (sqrt scaling for proportional feel)
+  const sizeFor = (count: number) => {
+    if (maxCount === minCount) return cellMaxR;
+    // Use sqrt scaling so larger collections don't dominate too much
+    const t = Math.sqrt(count / maxCount);
+    return cellMaxR * (0.55 + 0.45 * t);
+  };
+
+  // Position cluster centers
+  const regions: Record<string, { cx: number; cy: number; r: number; count: number }> = {};
+  collections.forEach((col, i) => {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    regions[col] = {
+      cx: startX + cellW * c + cellW / 2,
+      cy: startY + cellH * r + cellH / 2,
+      r: sizeFor(byCollection[col].length),
+      count: byCollection[col].length,
+    };
+  });
+
+  // Position nodes within each cluster using concentric circles
+  const positions: { x: number; y: number }[] = new Array(nodes.length);
+  const nodeIndexById = new Map();
+  for (let i = 0; i < nodes.length; i++) nodeIndexById.set(nodes[i].id, i);
+
+  for (const col of collections) {
+    const list = byCollection[col];
+    const region = regions[col];
+    const N = list.length;
+    if (N === 0) continue;
+
+    // Most-connected node at center
+    positions[nodeIndexById.get(list[0].id)] = { x: region.cx, y: region.cy };
+
+    // Others in concentric rings (6 per ring)
+    for (let i = 1; i < N; i++) {
+      const ringIndex = i - 1;
+      let ring = 0;
+      let cumulative = 0;
+      const perRing = 6;
+      while (cumulative + perRing <= ringIndex) {
+        ring++;
+        cumulative += perRing;
+      }
+      const posInRing = ringIndex - cumulative;
+      const totalRings = Math.ceil((N - 1) / perRing);
+      // Ring radius grows outward but capped at 0.9 * region.r
+      const ringRadius = (region.r * 0.85) * (ring + 1) / Math.max(1, totalRings);
+      const angle = (posInRing / perRing) * Math.PI * 2 + ring * 0.4;
+      positions[nodeIndexById.get(list[i].id)] = {
+        x: region.cx + Math.cos(angle) * ringRadius,
+        y: region.cy + Math.sin(angle) * ringRadius,
+      };
+    }
+  }
+
+  return { positions, regions };
 }
