@@ -683,7 +683,8 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
       }  // end for nodes
 
       // === Collect labels to draw (so we can declutter) ===
-      // Priority: hovered > search > filter match > hub > high-degree
+      // Priority: hovered > search > filter match > high-degree > all at high zoom
+      // Store BOTH world coords (for drawing) and screen coords (for declutter math)
       var labelsToDraw = [];
       for (var li0 = 0; li0 < nodes.length; li0++) {
         var ln = nodes[li0];
@@ -694,23 +695,31 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         if (hoveredNode === ln) { lshouldShow = true; lpriority = 1000; }
         else if (hoveredNode && hoverSet[ln.id]) { lshouldShow = true; lpriority = 900; }
         else if (searchMatchIds && matchSet[ln.id]) { lshouldShow = true; lpriority = 800; }
-        else if ((ln.degree || 0) >= 12) { lshouldShow = true; lpriority = 500 + (ln.degree || 0); }
-        else if (scale > 1.8) { lshouldShow = true; lpriority = 200 + (ln.degree || 0); }
+        else if ((ln.degree || 0) >= 5) { lshouldShow = true; lpriority = 500 + (ln.degree || 0); }
+        else if ((ln.degree || 0) >= 2 && scale > 0.7) { lshouldShow = true; lpriority = 350 + (ln.degree || 0); }
+        else if (scale > 1.2) { lshouldShow = true; lpriority = 200 + (ln.degree || 0); }
         else if (filterCol) { lshouldShow = true; lpriority = 100 + (ln.degree || 0); }
         if (lshouldShow) {
           var lsx = (ln.x - viewX) * scale;
           var lsy = (ln.y - viewY) * scale;
           if (lsx < -10 || lsx > viewWidth + 10 || lsy < -10 || lsy > viewHeight + 10) continue;
-          labelsToDraw.push({ n: ln, x: lsx, y: lsy, priority: lpriority, degree: ln.degree || 0 });
+          labelsToDraw.push({ 
+            n: ln, 
+            x: ln.x, y: ln.y,
+            sx: lsx, sy: lsy,
+            priority: lpriority, 
+            degree: ln.degree || 0 
+          });
         }
       }
       // Sort by priority (highest first) so important labels win
       labelsToDraw.sort(function(a, b) { return b.priority - a.priority; });
 
-      // === Declutter pass: greedy rect-overlap test ===
+      // === Declutter pass: smart label placement ===
       var placed = [];
-      var maxLabelWidth = scale > 1.5 ? 160 : 110;
-      var labelFontSize = scale > 1.5 ? 12 : 10;
+      // Adaptive max label width based on zoom
+      var maxLabelWidth = scale > 1.5 ? 140 : (scale > 1.0 ? 100 : 80);
+      var labelFontSize = scale > 1.5 ? 12 : (scale > 1.0 ? 11 : 10);
       ctx.font = '500 ' + labelFontSize + 'px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
@@ -718,33 +727,75 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
       for (var li1 = 0; li1 < labelsToDraw.length; li1++) {
         var lb = labelsToDraw[li1];
         var nodeR = sizeFor(lb.degree);
-        var textY = lb.y - nodeR - 4;
+        var screenR = nodeR * scale;  // node radius in screen pixels
         var txt = lb.n.title;
+        // Smart truncate
         if (ctx.measureText(txt).width > maxLabelWidth) {
-          while (txt.length > 4 && ctx.measureText(txt + '…').width > maxLabelWidth) txt = txt.slice(0, -1);
-          txt += '…';
+          var truncated = txt;
+          while (truncated.length > 4 && ctx.measureText(truncated + '…').width > maxLabelWidth) {
+            truncated = truncated.slice(0, -1);
+          }
+          truncated += '…';
+          txt = truncated;
         }
         var w = Math.min(ctx.measureText(txt).width, maxLabelWidth);
         var h = labelFontSize + 2;
-        var rect = { l: lb.x - w/2 - 2, r: lb.x + w/2 + 2, t: textY - h, b: textY + 2 };
-        // Skip if outside viewport
-        if (rect.l < 4 || rect.r > viewWidth - 4 || rect.t < 4 || rect.b > viewHeight - 4) continue;
-        // Skip if overlaps previously placed label
+        // Compute screen position for label, ABOVE the node
+        var labelScreenY_above = lb.sy - screenR - 4 - h;  // top of text
+        var labelScreenY_above_baseline = lb.sy - screenR - 4;  // baseline of text
+        var labelScreenY_below_baseline = lb.sy + screenR + 2 + labelFontSize;  // baseline
+        var labelScreenY_below_top = lb.sy + screenR + 2;
+        // Choose ABOVE or BELOW based on which fits better
+        var useBelow = (labelScreenY_above < 4);
+        var rect;
+        var screenTextBaseline;
+        if (useBelow) {
+          rect = { 
+            l: lb.sx - w/2 - 2, 
+            r: lb.sx + w/2 + 2, 
+            t: labelScreenY_below_top, 
+            b: labelScreenY_below_top + h 
+          };
+          screenTextBaseline = labelScreenY_below_baseline;
+        } else {
+          rect = { 
+            l: lb.sx - w/2 - 2, 
+            r: lb.sx + w/2 + 2, 
+            t: labelScreenY_above, 
+            b: labelScreenY_above_baseline + 2 
+          };
+          screenTextBaseline = labelScreenY_above_baseline;
+        }
+        // Skip if completely off-screen
+        if (rect.r < 0 || rect.l > viewWidth || rect.b < 0 || rect.t > viewHeight) continue;
+        // Soft edge clamp (shift into view if partially off)
+        if (rect.l < 4) {
+          var shift = 4 - rect.l;
+          rect.l += shift; rect.r += shift;
+        }
+        if (rect.r > viewWidth - 4) {
+          var shift2 = rect.r - (viewWidth - 4);
+          rect.l -= shift2; rect.r -= shift2;
+        }
+        // Overlap test
         var hits = false;
         for (var pi = 0; pi < placed.length; pi++) {
           var p2 = placed[pi];
-          if (!(rect.r < p2.l || rect.l > p2.r || rect.b < p2.t || rect.t > p2.b)) { hits = true; break; }
+          if (!(rect.r + 2 < p2.l || rect.l - 2 > p2.r || rect.b + 2 < p2.t || rect.t - 2 > p2.b)) { hits = true; break; }
         }
         if (hits) continue;
         placed.push(rect);
-        // Draw: outline (halo) + fill
-        ctx.lineWidth = 3;
+        // Convert SCREEN baseline to WORLD coord (so transform renders at right place)
+        var worldX = lb.x;  // already in world coords
+        var worldY = (screenTextBaseline) / scale + viewY;  // convert screen Y to world Y
+        ctx.lineWidth = 2.5;
         ctx.strokeStyle = THEME.bg;
-        ctx.globalAlpha = 0.95;
-        ctx.strokeText(txt, lb.x, textY);
+        ctx.globalAlpha = 0.9;
+        ctx.strokeText(txt, worldX, worldY);
         ctx.fillStyle = THEME.text;
-        ctx.fillText(txt, lb.x, textY);
+        ctx.fillText(txt, worldX, worldY);
         ctx.globalAlpha = 1;
+        window.__labelCount = (window.__labelCount || 0) + 1;
       }
 
       ctx.restore();
@@ -913,9 +964,9 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
       e.preventDefault();
       // Direction: -1 for zoom in, +1 for zoom out
       var dir = e.deltaY > 0 ? +1 : -1;
-      // Larger trackpads send many small events; smaller deltas => smaller steps
-      var step = Math.min(0.18, Math.abs(e.deltaY) / 600);
-      var factor = dir < 0 ? (1 + step * 0.7) : (1 - step * 0.7);
+      // Larger step so users reach label threshold faster (15-30% per event)
+      var step = Math.min(0.3, Math.abs(e.deltaY) / 300);
+      var factor = dir < 0 ? (1 + step) : (1 - step);
 
       var newScale = Math.max(0.15, Math.min(6, scale * factor));
       if (newScale === scale) return;
@@ -1064,8 +1115,9 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
     var zIn = document.getElementById('zoom-in');
     var zOut = document.getElementById('zoom-out');
     var zReset = document.getElementById('zoom-reset');
-    if (zIn) zIn.addEventListener('click', function() { zoomAtCenter(1.25); });
-    if (zOut) zOut.addEventListener('click', function() { zoomAtCenter(0.8); });
+    // Larger zoom step (1.5x per click) so users reach label threshold quickly
+    if (zIn) zIn.addEventListener('click', function() { zoomAtCenter(1.5); });
+    if (zOut) zOut.addEventListener('click', function() { zoomAtCenter(0.67); });
     if (zReset) zReset.addEventListener('click', function() {
       fitToView();
       requestRender();
@@ -1103,7 +1155,10 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
       var padTop = 80, padBottom = 20, padX = 50;
       var bboxW = maxX - minX + padX * 2;
       var bboxH = maxY - minY + padTop + padBottom;
-      scale = Math.min(viewWidth / bboxW, viewHeight / bboxH, 1.5);
+      var fitScale = Math.min(viewWidth / bboxW, viewHeight / bboxH, 1.5);
+      // Ensure minimum scale so user can see meaningful graph (don't force them to zoom in)
+      // On mobile this prevents tiny dots; on desktop it doesn't matter (already larger)
+      scale = Math.max(0.5, fitScale);
       viewX = minX - padX;
       viewY = minY - padTop;
     }
