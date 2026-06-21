@@ -35,7 +35,7 @@ infobox:
   - label: "Terjemahan Inggris terbaru"
     value: "Alison Finlay & Anthony Faulkes, 2011–2016"
 pronunciation: "[ˈheimsˌkʰriŋla]"
-quote: "In this book I have had old stories written down, as I have heard them told by intelligent people, concerning chiefs who have held dominion in the northern countries, and who spoke the Danish tongue."
+quote: "It is said that the earth's circle which the human race inhabits is torn across into many bights, so that great seas run into the land from the out-ocean."
 funFact: "Heimskringla mencakup kisah penemuan Amerika Utara oleh Leif Erikson — salah satu dari sedikit teks abad pertengahan yang menyebut Vinland, yang kemudian dikonfirmasi oleh temuan arkeologis di L'Anse aux Meadows, Newfoundland pada 1960."
 ---
 
@@ -387,19 +387,58 @@ Pada abad ke-19, ketika Norwegia **lepas dari Denmark (1814)** dan kemudian dari
 
 ## Kutipan Kunci
 
-Dari prolog Snorri:
+Kutipan-kutipan di bawah ini diambil dari **terjemahan Samuel Laing (1844)** — yang tersedia open-access melalui Global Grey ebooks.
+
+### 1. Pembukaan Ynglinga Saga (asal nama "Heimskringla")
+
+> *"It is said that the earth's circle which the human race inhabits is torn across into many bights, so that great seas run into the land from the out-ocean. Thus it is known that a great sea goes in at Narvesund, and up to the land of Jerusalem. From the same sea a long sea-bight stretches towards the north-east, and is called the Black Sea, and divides the three parts of the earth…"*
+
+— *Ynglinga Saga*, bagian pembuka. Frasa "earth's circle" (= "kringla heimsins") di sini yang menjadi asal-usul nama *Heimskringla*.
+
+### 2. Odin ke Godheim — Asal Kultus Pagan
+
+> *"Odin died in his bed in Swithiod; and when he was near his death he made himself be marked with the point of a spear, and said he was going to Godheim, and would give a welcome there to all his friends, and all brave warriors should be dedicated to him; and the Swedes believed that he was gone to the ancient Asgaard, and would live there eternally. Then began the belief in Odin, and the calling upon him."*
+
+— *Ynglinga Saga*, pasal "Of Odin's Death."
+
+### 3. Kematian Freyr dan Euhemerisasi
+
+> *"Frey built a great temple at Upsal, made it his chief seat, and gave it all his taxes, his land, and goods. Then began the Upsal domains, which have remained ever since. Then began in his days the Frode-peace; and then there were good seasons, in all the land, which the Swedes ascribed to Frey, so that he was more worshipped than the other gods, as the people became much richer in his days by reason of the peace and good seasons."*
+
+> *"Frey fell into a sickness; and as his illness took the upper hand, his men took the plan of letting few approach him. In the meantime they raised a great mound, in which they placed a door with three holes in it. Now when Frey died they bore him secretly into the mound, but told the Swedes he was alive; and they kept watch over him for three years."*
+
+— *Ynglinga Saga*, pasal "Frey's Death."
+
+### 4. Prolog Snorri (terjemahan Finlay & Faulkes)
 
 > *"In this book I have had old stories written down, as I have heard them told by intelligent people, concerning chiefs who have held dominion in the northern countries, and who spoke the Danish tongue; and also concerning some of their family branches, according to what has been told me. Some of this is found in ancient family registers, in which the pedigrees of kings and other personages of high birth are reckoned up, and part is written down after old songs and ballads which our forefathers had for their amusement. Now, although we cannot just say what truth there may be in these, yet we have the certainty that old and wise men held them to be true."*
 
-Dari *Ynglinga saga* (akhir [Freyr](/concepts/norse-mythology#frey)):
+— *Heimskringla*, Prolog Snorri (Laing 1844 tidak menyertakan prolog ini — kutipan dari terjemahan Finlay & Faulkes 2011).
 
-> *"When it became known to the Swedes that Frey was dead, and yet peace and good seasons continued, they believed that it must be so as long as Frey remained in Sweden; and therefore they would not burn his remains, but called him the god of this world, and afterwards offered continually blood-sacrifices to him, principally for peace and good seasons."*
+### 5. Pidato Óláfr Haraldsson di Stiklestad (menurut Harald Adiknya)
 
-Dari *Saga Óláfr Haraldsson* — pidato raja kepada petani di Valders:
-
-> *"It appears to me advisable that Harald my brother should not be in the battle, for he is still in the years of childhood only."*
+> Harald menjawab permintaan raja agar ia tetap di belakang:
 >
-> Harald replies: *"Certainly I shall be in the battle, for I am not so weak that I cannot handle the sword; and as to that, I have a notion of tying the sword-handle to my hand. None is more willing than I am to give the bondes a blow…"*
+> *"Certainly I shall be in the battle, for I am not so weak that I cannot handle the sword; and as to that, I have a notion of tying the sword-handle to my hand. None is more willing than I am to give the bondes a blow; so I shall go with my comrades."*
+>
+> Lalu Harald bersyair:
+>
+> *"Our army's wing, where I shall stand,*
+> *I will hold good with heart and hand;*
+> *My mother's eye shall joy to see*
+> *A battered, blood-stained shield from me.*
+> *The brisk young skald should gaily go*
+> *Into the fray, give blow for blow,*
+> *Cheer on his men, gain inch by inch,*
+> *And from the spear-point never flinch."*
+
+— *Saga of Olaf Haraldson*, bagian "King Olaf Comes to Stiklestad." Harald berusia 15 tahun saat itu, dan berhasil selamat dari pertempuran untuk kemudian menjadi Harald Hardruler.
+
+### 6. Seruan Thorer Hund di Awal Pertempuran
+
+> *"Now came Thorer Hund, went forward in front of the banner with his troop, and called out, 'Forward, forward, bondemen!' Thereupon the bondemen raised the war-cry, and shot their arrows and spears…"*
+
+— *Saga of Olaf Haraldson*, bagian "Beginning of the Battle of Stiklestad." Thorer Hund (pemberani pagan) akhirnya membunuh Óláfr dengan tombaknya.
 
 ---
 
