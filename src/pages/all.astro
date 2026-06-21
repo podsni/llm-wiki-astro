@@ -1,16 +1,12 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getAllEntries, getEntryUrl, COLLECTIONS, COLLECTION_LABELS, getAllTags, getAllCategories } from '../../utils/content';
-import { formatDate } from '../../utils/format';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllEntries, getEntryUrl, COLLECTIONS, COLLECTION_LABELS, getAllTags, getAllCategories } from '../utils/content';
+import { formatDate } from '../utils/format';
 
 const url = new URL(Astro.request.url);
-const typeFilter = url.searchParams.get('type') as typeof COLLECTIONS[number] | null;
 const sort = url.searchParams.get('sort') ?? 'updated';
 
 let all = await getAllEntries();
-if (typeFilter && COLLECTIONS.includes(typeFilter)) {
-  all = all.filter(({ collection }) => collection === typeFilter);
-}
 
 if (sort === 'title') {
   all.sort((a, b) => a.entry.data.title.localeCompare(b.entry.data.title));
@@ -24,18 +20,18 @@ const tags = await getAllTags();
 const categories = await getAllCategories();
 ---
 
-<BaseLayout title={typeFilter ? `${COLLECTION_LABELS[typeFilter]} — All articles` : 'All articles'} description="Browse all articles, notes, concepts, projects, and more in the LLM Wiki.">
+<BaseLayout title="All articles" description="Browse all articles, notes, concepts, projects, and more in the LLM Wiki.">
   <div class="container">
     <header class="article-header" style="margin-top: var(--sp-6);">
-      <h1 style="margin-top: 0;">{typeFilter ? COLLECTION_LABELS[typeFilter] : 'All articles'}</h1>
-      <p class="article-description">{typeFilter ? `All ${COLLECTION_LABELS[typeFilter].toLowerCase()} in the wiki.` : 'Every article, note, concept, project, and source in the wiki.'}</p>
+      <h1 style="margin-top: 0;">All articles</h1>
+      <p class="article-description">Every article, note, concept, project, and source in the wiki.</p>
 
       <div class="tag-list" style="margin-top: var(--sp-4);">
-        <a class="tag" href="/articles" style={!typeFilter ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>All ({all.length}{typeFilter ? ` of ${all.length})` : ''})</a>
+        <a class="tag" href="/all" style="background: var(--color-primary); color: var(--color-bg);">All ({all.length})</a>
         {COLLECTIONS.map((c) => {
           const count = all.filter(({ collection }) => collection === c).length;
           return (
-            <a class="tag" href={`/articles?type=${c}`} style={typeFilter === c ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>
+            <a class="tag" href={`/${c}`}>
               {COLLECTION_LABELS[c]} ({count})
             </a>
           );
@@ -44,9 +40,9 @@ const categories = await getAllCategories();
 
       <div class="article-meta" style="margin-top: var(--sp-4);">
         <span>Sorted by:</span>
-        <a class="tag" href={`?${typeFilter ? `type=${typeFilter}&` : ''}sort=updated`} style={sort === 'updated' ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>Recently updated</a>
-        <a class="tag" href={`?${typeFilter ? `type=${typeFilter}&` : ''}sort=date`} style={sort === 'date' ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>Date created</a>
-        <a class="tag" href={`?${typeFilter ? `type=${typeFilter}&` : ''}sort=title`} style={sort === 'title' ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>Title</a>
+        <a class="tag" href={`?sort=updated`} style={sort === 'updated' ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>Recently updated</a>
+        <a class="tag" href={`?sort=date`} style={sort === 'date' ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>Date created</a>
+        <a class="tag" href={`?sort=title`} style={sort === 'title' ? 'background: var(--color-primary); color: var(--color-bg);' : ''}>Title</a>
       </div>
     </header>
 

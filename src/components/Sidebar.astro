@@ -31,12 +31,12 @@ const collectionsWithContent = COLLECTIONS.filter((c) =>
     <li><a href="/random" class={path === '/random' ? 'active' : ''}>Random article</a></li>
   </ul>
 
-  {collectionsWithContent.length > 0 && (
+  {COLLECTIONS.length > 0 && (
     <>
       <h3>Collections</h3>
       <ul>
-        {collectionsWithContent.map((c) => (
-          <li><a href={`/articles?type=${c}`} class={activeCollection === c ? 'active' : ''}>{COLLECTION_LABELS[c]}</a></li>
+        {COLLECTIONS.map((c) => (
+          <li><a href={`/${c}`} class={activeCollection === c ? 'active' : ''}>{COLLECTION_LABELS[c]}</a></li>
         ))}
       </ul>
     </>

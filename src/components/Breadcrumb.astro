@@ -11,7 +11,7 @@ const { collection, collectionLabel, title } = Astro.props;
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/">Home</a>
   <span class="breadcrumb-sep">›</span>
-  <a href={`/articles?type=${collection}`}>{collectionLabel}</a>
+  <a href={`/${collection}`}>{collectionLabel}</a>
   <span class="breadcrumb-sep">›</span>
   <span>{title}</span>
 </nav>

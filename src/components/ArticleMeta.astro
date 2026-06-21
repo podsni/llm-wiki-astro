@@ -7,7 +7,7 @@ interface Props {
 }
 
 const { entry, minutes } = Astro.props;
-const updatedDate = entry.data.updated?.valueOf() !== entry.data.date.valueOf()
+const updatedDate = entry.data.updated && entry.data.updated?.valueOf() !== entry.data.date?.valueOf()
   ? formatDate(entry.data.updated)
   : null;
 ---

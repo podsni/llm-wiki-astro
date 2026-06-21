@@ -76,6 +76,16 @@ export async function getAllEntries(): Promise<{
 }
 
 /**
+ * Get all entries for a single collection (drafts filtered in production).
+ * Returns the typed CollectionEntry directly (not wrapped).
+ */
+export async function getEntriesByCollection(collection: CollectionName): Promise<AnyEntry[]> {
+  const isProd = import.meta.env.PROD;
+  const entries = await getCollection(collection);
+  return entries.filter((e) => !(isProd && e.data.draft));
+}
+
+/**
  * Get the URL for an entry. URL reflects the collection (e.g. /concepts/llm).
  */
 export function getEntryUrl(collection: CollectionName, slug: string): string {
@@ -113,6 +123,22 @@ export async function getAllTags(): Promise<{ tag: string; count: number }[]> {
 }
 
 /**
+ * Get all tags for a single collection.
+ */
+export async function getAllTagsForCollection(collection: CollectionName): Promise<{ tag: string; count: number }[]> {
+  const all = await getEntriesByCollection(collection);
+  const counts = new Map<string, number>();
+  for (const entry of all) {
+    for (const tag of (entry.data.tags ?? [])) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
+/**
  * Get all unique categories across all entries, with counts.
  */
 export async function getAllCategories(): Promise<{ category: string; count: number }[]> {
@@ -120,6 +146,21 @@ export async function getAllCategories(): Promise<{ category: string; count: num
   const counts = new Map<string, number>();
   for (const { entry } of all) {
     const cat = entry.data.category;
+    counts.set(cat, (counts.get(cat) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category));
+}
+
+/**
+ * Get all categories for a single collection.
+ */
+export async function getAllCategoriesForCollection(collection: CollectionName): Promise<{ category: string; count: number }[]> {
+  const all = await getEntriesByCollection(collection);
+  const counts = new Map<string, number>();
+  for (const entry of all) {
+    const cat = entry.data.category || 'uncategorized';
     counts.set(cat, (counts.get(cat) ?? 0) + 1);
   }
   return [...counts.entries()]

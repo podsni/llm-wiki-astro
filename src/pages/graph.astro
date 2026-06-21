@@ -22,15 +22,15 @@ const collectionColors: Record<string, string> = {
       <span class="category-chip">Graph</span>
       <h1 style="margin-top: 0;">Graph view</h1>
       <p class="article-description">
-        All {nodes.length} articles and their {edges.length} connections. Drag to pan, scroll to zoom, click a node to open the article.
+        All {nodes.length} articles and their {edges.length} connections. <strong>Drag to pan</strong>, <strong>scroll/pinch to zoom</strong>, <strong>drag nodes</strong> to reposition, <strong>click a node</strong> to open the article.
       </p>
     </header>
 
     <div class="graph-container" id="graph-container" data-nodes={JSON.stringify(nodes)} data-edges={JSON.stringify(edges)}>
       <svg></svg>
       <div class="graph-controls">
-        <input type="search" id="graph-search" placeholder="Find node..." />
-        <select id="graph-collection">
+        <input type="search" id="graph-search" placeholder="Find node..." aria-label="Find node" />
+        <select id="graph-collection" aria-label="Filter by collection">
           <option value="">All collections</option>
           <option value="notes">Notes</option>
           <option value="articles">Articles</option>
@@ -43,6 +43,11 @@ const collectionColors: Record<string, string> = {
           <option value="sources">Sources</option>
         </select>
       </div>
+      <div class="graph-actions">
+        <button class="graph-btn" id="graph-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+        <button class="graph-btn" id="graph-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+        <button class="graph-btn" id="graph-zoom-reset" title="Reset view" aria-label="Reset view">⌂</button>
+      </div>
       <div class="graph-legend">
         {Object.entries(collectionColors).slice(0, 6).map(([c, color]) => (
           <div class="graph-legend-item">
@@ -51,207 +56,511 @@ const collectionColors: Record<string, string> = {
           </div>
         ))}
       </div>
+      <div class="graph-hint" id="graph-hint">Tap &amp; drag to pan · pinch to zoom · tap a node to open</div>
     </div>
   </div>
 </BaseLayout>
 
+<style>
+  .graph-actions {
+    position: absolute;
+    top: var(--sp-3);
+    right: var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+  }
+  .graph-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text);
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .graph-btn:hover { background: var(--color-bg-soft); border-color: var(--color-primary); }
+  .graph-btn:active { transform: scale(0.95); }
+  .graph-hint {
+    position: absolute;
+    bottom: var(--sp-3);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: var(--fs-xs);
+    color: var(--color-text-soft);
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.9;
+  }
+  .graph-hint.hidden { display: none; }
+  @media (max-width: 768px) {
+    .graph-btn { width: 44px; height: 44px; font-size: 22px; }
+  }
+</style>
+
 <script define:vars={{ nodes, edges, collectionColors }}>
-  // Simple force-directed graph using D3-style physics, vanilla JS (no d3 dependency).
-  // Renders SVG nodes + edges; user can pan/zoom and click nodes to navigate.
-  const container = document.getElementById('graph-container');
-  const svg = container.querySelector('svg');
-  const ns = 'http://www.w3.org/2000/svg';
+  (() => {
+    const container = document.getElementById('graph-container');
+    const svg = container.querySelector('svg');
+    const ns = 'http://www.w3.org/2000/svg';
 
-  let width = container.clientWidth;
-  let height = container.clientHeight;
+    let width = 800;
+    let height = 600;
 
-  // Map id -> node for quick lookup
-  const nodeById = new Map();
-  for (const n of nodes) nodeById.set(n.id, n);
+    function measure() {
+      // Use the actual computed size of the container
+      const rect = container.getBoundingClientRect();
+      width = rect.width || 800;
+      height = rect.height || 600;
+    }
 
-  // Initialize node positions randomly with a wider spread
-  for (const n of nodes) {
-    n.x = width / 2 + (Math.random() - 0.5) * (width * 0.6);
-    n.y = height / 2 + (Math.random() - 0.5) * (height * 0.6);
-    n.vx = 0;
-    n.vy = 0;
-  }
+    // Set SVG viewBox + use 100% sizing via CSS
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-  // Build SVG
-  const linkGroup = document.createElementNS(ns, 'g');
-  const nodeGroup = document.createElementNS(ns, 'g');
-  const labelGroup = document.createElementNS(ns, 'g');
-  svg.appendChild(linkGroup);
-  svg.appendChild(nodeGroup);
-  svg.appendChild(labelGroup);
-
-  // Create link elements
-  const linkEls = edges.map((e) => {
-    const el = document.createElementNS(ns, 'line');
-    el.setAttribute('class', 'graph-link');
-    linkGroup.appendChild(el);
-    return el;
-  });
-
-  // Create node elements
-  const nodeEls = nodes.map((n) => {
-    const g = document.createElementNS(ns, 'g');
-    g.setAttribute('class', 'graph-node');
-    g.dataset.id = n.id;
-    const circle = document.createElementNS(ns, 'circle');
-    circle.setAttribute('r', 6);
-    circle.setAttribute('fill', collectionColors[n.collection] || '#888');
-    circle.setAttribute('stroke', 'var(--color-bg)');
-    circle.setAttribute('stroke-width', 2);
-    g.appendChild(circle);
-    nodeGroup.appendChild(g);
-    g.addEventListener('click', () => { window.location.href = n.url; });
-    g.addEventListener('mouseenter', () => { circle.setAttribute('r', 10); label.setAttribute('font-size', '13'); });
-    g.addEventListener('mouseleave', () => { circle.setAttribute('r', 6); label.setAttribute('font-size', '10'); });
-
-    const label = document.createElementNS(ns, 'text');
-    label.setAttribute('class', 'graph-node-label');
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('y', -10);
-    label.setAttribute('opacity', 0.85);
-    label.setAttribute('font-size', '10');
-    label.textContent = n.title;
-    g.appendChild(label);
-    return g;
-  });
-
-  // Simulation
-  function tick() {
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i];
-      // Repulsion from other nodes (much stronger)
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue;
-        const m = nodes[j];
-        const dx = n.x - m.x;
-        const dy = n.y - m.y;
-        const d2 = dx * dx + dy * dy + 0.01;
-        const d = Math.sqrt(d2);
-        const force = 4000 / d2;
-        n.vx += (dx / d) * force;
-        n.vy += (dy / d) * force;
+    // Defer init until after first layout
+    requestAnimationFrame(() => {
+      measure();
+      if (width < 50 || height < 50) {
+        // Container might be hidden — try again after delay
+        setTimeout(() => {
+          measure();
+          init();
+        }, 200);
+      } else {
+        init();
       }
-      // Center attraction (gentler to allow spreading)
-      n.vx += (width / 2 - n.x) * 0.0005;
-      n.vy += (height / 2 - n.y) * 0.0005;
-    }
-    // Spring forces on edges (longer ideal distance)
-    for (let i = 0; i < edges.length; i++) {
-      const e = edges[i];
-      const a = nodeById.get(e.source);
-      const b = nodeById.get(e.target);
-      if (!a || !b) continue;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
-      const target = 180;
-      const force = (d - target) * 0.04;
-      const fx = (dx / d) * force;
-      const fy = (dy / d) * force;
-      a.vx += fx; a.vy += fy;
-      b.vx -= fx; b.vy -= fy;
-    }
-    // Damping + integration
-    for (const n of nodes) {
-      n.vx *= 0.7; n.vy *= 0.7;
-      n.x += n.vx; n.y += n.vy;
-      n.x = Math.max(10, Math.min(width - 10, n.x));
-      n.y = Math.max(10, Math.min(height - 10, n.y));
-    }
-    // Update SVG
-    for (let i = 0; i < edges.length; i++) {
-      const e = edges[i];
-      const a = nodeById.get(e.source);
-      const b = nodeById.get(e.target);
-      const el = linkEls[i];
-      el.setAttribute('x1', a.x);
-      el.setAttribute('y1', a.y);
-      el.setAttribute('x2', b.x);
-      el.setAttribute('y2', b.y);
-    }
+    });
+
+    function init() {
+
+    // Map id -> node for quick lookup
+    const nodeById = new Map();
+    for (const n of nodes) nodeById.set(n.id, n);
+
+    // Initialize node positions in a circular/spiral pattern for better initial spread
     for (let i = 0; i < nodes.length; i++) {
       const n = nodes[i];
-      const el = nodeEls[i];
-      el.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+      const angle = (i / nodes.length) * 2 * Math.PI;
+      const radius = Math.min(width, height) * 0.3;
+      n.x = width / 2 + Math.cos(angle) * radius * (1 + 0.3 * (i / nodes.length));
+      n.y = height / 2 + Math.sin(angle) * radius * (1 + 0.3 * (i / nodes.length));
+      n.vx = 0;
+      n.vy = 0;
+      n.fx = null;
+      n.fy = null;
     }
-  }
 
-  let running = true;
-  function loop() {
-    if (running) tick();
-    requestAnimationFrame(loop);
-  }
-  loop();
+    // Build SVG groups
+    const linkGroup = document.createElementNS(ns, 'g');
+    const nodeGroup = document.createElementNS(ns, 'g');
+    const labelGroup = document.createElementNS(ns, 'g');
+    svg.appendChild(linkGroup);
+    svg.appendChild(nodeGroup);
+    svg.appendChild(labelGroup);
 
-  // Pan/zoom via SVG viewBox
-  let viewX = 0, viewY = 0, scale = 1;
-  function updateView() {
-    const w = width / scale;
-    const h = height / scale;
-    svg.setAttribute('viewBox', `${viewX} ${viewY} ${w} ${h}`);
-  }
-  updateView();
+    // Create link elements
+    const linkEls = edges.map((e) => {
+      const el = document.createElementNS(ns, 'line');
+      el.setAttribute('class', 'graph-link');
+      linkGroup.appendChild(el);
+      return el;
+    });
 
-  let isPanning = false, panStart = { x: 0, y: 0, vx: 0, vy: 0 };
-  svg.addEventListener('mousedown', (e) => {
-    isPanning = true;
-    panStart = { x: e.clientX, y: e.clientY, vx: viewX, vy: viewY };
-  });
-  window.addEventListener('mousemove', (e) => {
-    if (!isPanning) return;
-    const dx = (e.clientX - panStart.x) / scale;
-    const dy = (e.clientY - panStart.y) / scale;
-    viewX = panStart.vx - dx;
-    viewY = panStart.vy - dy;
-    updateView();
-  });
-  window.addEventListener('mouseup', () => { isPanning = false; });
+    // Create node elements
+    const nodeEls = nodes.map((n) => {
+      const g = document.createElementNS(ns, 'g');
+      g.setAttribute('class', 'graph-node');
+      g.dataset.id = n.id;
+      g.style.cursor = 'grab';
+      const circle = document.createElementNS(ns, 'circle');
+      circle.setAttribute('r', 7);
+      circle.setAttribute('fill', collectionColors[n.collection] || '#888');
+      circle.setAttribute('stroke', 'var(--color-bg)');
+      circle.setAttribute('stroke-width', 2.5);
+      g.appendChild(circle);
+      nodeGroup.appendChild(g);
 
-  svg.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const factor = e.deltaY > 0 ? 1.1 : 0.9;
-    scale = Math.max(0.3, Math.min(5, scale * factor));
-    updateView();
-  });
+      const label = document.createElementNS(ns, 'text');
+      label.setAttribute('class', 'graph-node-label');
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('y', -12);
+      label.setAttribute('opacity', 0.85);
+      label.setAttribute('font-size', '11');
+      label.setAttribute('font-weight', '500');
+      label.setAttribute('paint-order', 'stroke');
+      label.setAttribute('stroke', 'var(--color-bg)');
+      label.setAttribute('stroke-width', '3');
+      label.setAttribute('stroke-linecap', 'round');
+      label.setAttribute('stroke-linejoin', 'round');
+      label.textContent = n.title;
+      label.style.pointerEvents = 'none';
+      g.appendChild(label);
 
-  // Search & filter
-  const search = document.getElementById('graph-search');
-  const collection = document.getElementById('graph-collection');
-  function applyFilter() {
-    const q = search.value.toLowerCase();
-    const c = collection.value;
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i];
-      const matches = (!q || n.title.toLowerCase().includes(q)) && (!c || n.collection === c);
-      nodeEls[i].style.opacity = matches ? 1 : 0.15;
+      g.addEventListener('click', (e) => {
+        // Only navigate if not dragging
+        if (wasDragging) return;
+        e.stopPropagation();
+        window.location.href = n.url;
+      });
+      g.addEventListener('mouseenter', () => { circle.setAttribute('r', 10); });
+      g.addEventListener('mouseleave', () => { circle.setAttribute('r', 7); });
+
+      return g;
+    });
+
+    // Force simulation (paused by default — only runs when needed)
+    let running = false;
+    let settleFrames = 0;
+    const MAX_SETTLE_FRAMES = 240;  // ~4 seconds at 60fps
+
+    function tick() {
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        if (n.fx !== null) { n.x = n.fx; continue; }
+        // Repulsion
+        for (let j = 0; j < nodes.length; j++) {
+          if (i === j) continue;
+          const m = nodes[j];
+          const dx = n.x - m.x;
+          const dy = n.y - m.y;
+          const d2 = dx * dx + dy * dy + 0.01;
+          const force = 6000 / d2;
+          n.vx += (dx / Math.sqrt(d2)) * force;
+          n.vy += (dy / Math.sqrt(d2)) * force;
+        }
+        // Center attraction
+        n.vx += (width / 2 - n.x) * 0.001;
+        n.vy += (height / 2 - n.y) * 0.001;
+      }
+      // Spring forces on edges
+      for (let i = 0; i < edges.length; i++) {
+        const e = edges[i];
+        const a = nodeById.get(e.source);
+        const b = nodeById.get(e.target);
+        if (!a || !b) continue;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+        const target = 200;
+        const force = (d - target) * 0.04;
+        const fx = (dx / d) * force;
+        const fy = (dy / d) * force;
+        a.vx += fx; a.vy += fy;
+        b.vx -= fx; b.vy -= fy;
+      }
+      // Damping + integration
+      for (const n of nodes) {
+        if (n.fx !== null) { n.x = n.fx; n.y = n.fy || n.y; n.vx = 0; n.vy = 0; continue; }
+        n.vx *= 0.7; n.vy *= 0.7;
+        n.x += n.vx; n.y += n.vy;
+        n.x = Math.max(15, Math.min(width - 15, n.x));
+        n.y = Math.max(15, Math.min(height - 15, n.y));
+      }
+      // Update SVG
+      for (let i = 0; i < edges.length; i++) {
+        const e = edges[i];
+        const a = nodeById.get(e.source);
+        const b = nodeById.get(e.target);
+        const el = linkEls[i];
+        el.setAttribute('x1', a.x);
+        el.setAttribute('y1', a.y);
+        el.setAttribute('x2', b.x);
+        el.setAttribute('y2', b.y);
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        nodeEls[i].setAttribute('transform', `translate(${n.x}, ${n.y})`);
+      }
+      settleFrames++;
+      if (settleFrames >= MAX_SETTLE_FRAMES) {
+        running = false;
+        settleFrames = 0;
+      }
     }
-    for (let i = 0; i < edges.length; i++) {
-      const e = edges[i];
-      const a = nodeById.get(e.source);
-      const b = nodeById.get(e.target);
-      const aVis = !a.style || a.style.opacity !== '0.15';
-      const bVis = !b.style || b.style.opacity !== '0.15';
-      linkEls[i].style.opacity = (aVis && bVis) ? 0.5 : 0.05;
+
+    function loop() {
+      if (running) tick();
+      requestAnimationFrame(loop);
     }
-  }
-  search.addEventListener('input', applyFilter);
-  collection.addEventListener('change', applyFilter);
+    loop();
 
-  // Pause when offscreen
-  const observer = new IntersectionObserver((entries) => {
-    running = entries[0].isIntersecting;
-  });
-  observer.observe(container);
+    // === Pan / Zoom via SVG viewBox ===
+    let viewX = 0, viewY = 0, scale = 1;
+    const MIN_SCALE = 0.2, MAX_SCALE = 5;
 
-  // Resize
-  window.addEventListener('resize', () => {
-    width = container.clientWidth;
-    height = container.clientHeight;
+    function updateView() {
+      const w = width / scale;
+      const h = height / scale;
+      svg.setAttribute('viewBox', `${viewX} ${viewY} ${w} ${h}`);
+    }
     updateView();
-  });
+
+    // Convert client coords to SVG coords
+    function clientToSVG(clientX, clientY) {
+      const rect = svg.getBoundingClientRect();
+      return {
+        x: viewX + (clientX - rect.left) * (width / scale) / rect.width,
+        y: viewY + (clientY - rect.top) * (height / scale) / rect.height,
+      };
+    }
+
+    // === Pointer-based pan (works for mouse + touch via PointerEvent) ===
+    let isPanning = false;
+    let isDraggingNode = false;
+    let draggedNode = null;
+    let panStart = { x: 0, y: 0, vx: 0, vy: 0 };
+    let wasDragging = false;
+    let dragStartTime = 0;
+
+    function onPointerDown(e) {
+      // Find if click is on a node
+      const target = e.target.closest('.graph-node');
+      if (target && e.pointerType !== 'mouse' || (target && e.button === 0)) {
+        const id = target.dataset.id;
+        draggedNode = nodeById.get(id);
+        if (draggedNode) {
+          isDraggingNode = true;
+          isPanning = false;
+          draggedNode.fx = draggedNode.x;
+          draggedNode.fy = draggedNode.y;
+          // Wake up simulation while dragging
+          running = true;
+          settleFrames = 0;
+          target.style.cursor = 'grabbing';
+          target.setPointerCapture(e.pointerId);
+          e.stopPropagation();
+          return;
+        }
+      }
+      // Otherwise: pan
+      isPanning = true;
+      isDraggingNode = false;
+      panStart = { x: e.clientX, y: e.clientY, vx: viewX, vy: viewY };
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+    }
+
+    function onPointerMove(e) {
+      if (isDraggingNode && draggedNode) {
+        const p = clientToSVG(e.clientX, e.clientY);
+        draggedNode.fx = p.x;
+        draggedNode.fy = p.y;
+        wasDragging = true;
+        // Keep simulation running
+        settleFrames = 0;
+        return;
+      }
+      if (isPanning) {
+        const rect = svg.getBoundingClientRect();
+        const dx = (e.clientX - panStart.x) * (width / scale) / rect.width;
+        const dy = (e.clientY - panStart.y) * (height / scale) / rect.height;
+        viewX = panStart.vx - dx;
+        viewY = panStart.vy - dy;
+        updateView();
+      }
+    }
+
+    function onPointerUp(e) {
+      if (isDraggingNode && draggedNode) {
+        // Release fixed position
+        draggedNode.fx = null;
+        draggedNode.fy = null;
+        draggedNode = null;
+        // Wake simulation briefly to settle
+        running = true;
+        settleFrames = 0;
+      }
+      isPanning = false;
+      isDraggingNode = false;
+      try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+      // Reset wasDragging after a tick
+      setTimeout(() => { wasDragging = false; }, 50);
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown);
+    svg.addEventListener('pointermove', onPointerMove);
+    svg.addEventListener('pointerup', onPointerUp);
+    svg.addEventListener('pointercancel', onPointerUp);
+    svg.addEventListener('pointerleave', onPointerUp);
+
+    // === Fallback: touch event handlers for browsers/tests that don't fire pointer events from touch ===
+    svg.addEventListener('touchstart', (e) => {
+      // Skip pinch handling — multi-touch goes to pinch handler
+      if (e.touches.length > 1) return;
+      const t = e.touches[0];
+      if (!t) return;
+      onPointerDown({ clientX: t.clientX, clientY: t.clientY, target: e.target, button: 0, preventDefault: () => e.preventDefault() });
+    }, { passive: false });
+    svg.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 1) return;
+      const t = e.touches[0];
+      if (!t) return;
+      onPointerMove({ clientX: t.clientX, clientY: t.clientY });
+      if (isPanning) e.preventDefault();
+    }, { passive: false });
+    svg.addEventListener('touchend', (e) => {
+      onPointerUp({});
+    });
+    svg.addEventListener('touchcancel', (e) => {
+      onPointerUp({});
+    });
+
+    // === Wheel zoom (mouse + trackpad) ===
+    svg.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.1 : 0.9;
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+      // Zoom towards mouse position
+      const p = clientToSVG(e.clientX, e.clientY);
+      const newW = width / newScale;
+      const newH = height / newScale;
+      const rect = svg.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width;
+      const py = (e.clientY - rect.top) / rect.height;
+      viewX = p.x - px * newW;
+      viewY = p.y - py * newH;
+      scale = newScale;
+      updateView();
+    }, { passive: false });
+
+    // === Touch pinch zoom (multi-finger) ===
+    const activeTouches = new Map();
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+    let pinchCenter = null;
+
+    function onTouchStart(e) {
+      for (const t of e.changedTouches) {
+        activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY });
+      }
+      if (activeTouches.size === 2) {
+        // Start pinch
+        const t1 = Array.from(activeTouches.values())[0];
+        const t2 = Array.from(activeTouches.values())[1];
+        const dx = t2.x - t1.x;
+        const dy = t2.y - t1.y;
+        pinchStartDist = Math.sqrt(dx * dx + dy * dy);
+        pinchStartScale = scale;
+        pinchCenter = { x: (t1.x + t2.x) / 2, y: (t1.y + t2.y) / 2 };
+        // Cancel any pan
+        isPanning = false;
+      }
+    }
+    function onTouchMove(e) {
+      for (const t of e.changedTouches) {
+        const cur = activeTouches.get(t.identifier);
+        if (cur) { cur.x = t.clientX; cur.y = t.clientY; }
+      }
+      if (activeTouches.size === 2 && pinchStartDist > 0) {
+        e.preventDefault();
+        const t1 = Array.from(activeTouches.values())[0];
+        const t2 = Array.from(activeTouches.values())[1];
+        const dx = t2.x - t1.x;
+        const dy = t2.y - t1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pinchStartScale * (dist / pinchStartDist)));
+        // Zoom towards pinch center
+        const rect = svg.getBoundingClientRect();
+        const c = pinchCenter;
+        const p = clientToSVG(c.x, c.y);
+        const newW = width / newScale;
+        const newH = height / newScale;
+        const px = (c.x - rect.left) / rect.width;
+        const py = (c.y - rect.top) / rect.height;
+        viewX = p.x - px * newW;
+        viewY = p.y - py * newH;
+        scale = newScale;
+        updateView();
+      }
+    }
+    function onTouchEnd(e) {
+      for (const t of e.changedTouches) {
+        activeTouches.delete(t.identifier);
+      }
+      if (activeTouches.size < 2) {
+        pinchStartDist = 0;
+        pinchCenter = null;
+      }
+    }
+
+    svg.addEventListener('touchstart', onTouchStart, { passive: false });
+    svg.addEventListener('touchmove', onTouchMove, { passive: false });
+    svg.addEventListener('touchend', onTouchEnd);
+    svg.addEventListener('touchcancel', onTouchEnd);
+
+    // === Action buttons ===
+    document.getElementById('graph-zoom-in').addEventListener('click', () => {
+      scale = Math.min(MAX_SCALE, scale * 1.2);
+      updateView();
+    });
+    document.getElementById('graph-zoom-out').addEventListener('click', () => {
+      scale = Math.max(MIN_SCALE, scale * 0.83);
+      updateView();
+    });
+    document.getElementById('graph-zoom-reset').addEventListener('click', () => {
+      scale = 1;
+      viewX = 0;
+      viewY = 0;
+      updateView();
+    });
+
+    // === Search & filter ===
+    const search = document.getElementById('graph-search');
+    const collection = document.getElementById('graph-collection');
+    function applyFilter() {
+      const q = search.value.toLowerCase();
+      const c = collection.value;
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        const matches = (!q || n.title.toLowerCase().includes(q)) && (!c || n.collection === c);
+        nodeEls[i].style.opacity = matches ? 1 : 0.15;
+      }
+      for (let i = 0; i < edges.length; i++) {
+        const e = edges[i];
+        const a = nodeById.get(e.source);
+        const b = nodeById.get(e.target);
+        const aVis = nodeEls[nodes.indexOf(a)].style.opacity !== '0.15';
+        const bVis = nodeEls[nodes.indexOf(b)].style.opacity !== '0.15';
+        linkEls[i].style.opacity = (aVis && bVis) ? 0.5 : 0.05;
+      }
+    }
+    search.addEventListener('input', applyFilter);
+    collection.addEventListener('change', applyFilter);
+
+    // === Auto-settle once on load, then go quiet ===
+    running = true;
+    settleFrames = 0;
+
+    // === Resize ===
+    const resizeObserver = new ResizeObserver(() => {
+      measure();
+      svg.setAttribute('width', String(width));
+      svg.setAttribute('height', String(height));
+      updateView();
+    });
+    resizeObserver.observe(container);
+
+    // === Auto-hide hint after 5s ===
+    const hint = document.getElementById('graph-hint');
+    let hintTimeout = setTimeout(() => hint?.classList.add('hidden'), 5000);
+    container.addEventListener('pointerdown', () => {
+      clearTimeout(hintTimeout);
+      hint?.classList.add('hidden');
+    }, { once: true });
+    } // end init()
+  })();
 </script>
