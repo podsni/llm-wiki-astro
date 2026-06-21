@@ -21,7 +21,7 @@ const isActive = (p: string) => path === p || (p !== '/' && path.startsWith(p));
     </a>
 
     <nav class="site-nav" aria-label="Primary">
-      <a href="/articles" class={isActive('/articles') ? 'active' : ''}>All</a>
+      <a href="/all" class={isActive('/all') ? 'active' : ''}>All</a>
       <a href="/timeline" class={isActive('/timeline') ? 'active' : ''}>Timeline</a>
       <a href="/graph" class={isActive('/graph') ? 'active' : ''}>Graph</a>
       <a href="/az" class={isActive('/az') ? 'active' : ''}>A–Z</a>
