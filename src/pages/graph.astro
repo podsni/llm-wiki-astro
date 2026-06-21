@@ -198,7 +198,7 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
   .graph-canvas.is-dragging { cursor: grabbing; }
   .graph-canvas.is-panning { cursor: grabbing; }
 
-  .graph-actions { position: absolute; top: var(--sp-3); right: var(--sp-3); display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  .graph-actions { position: absolute; bottom: var(--sp-3); right: var(--sp-3); display: flex; flex-direction: column; gap: 6px; z-index: 10; }
   .layout-switch { display: flex; background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: 6px; overflow: hidden; }
   .layout-btn {
     width: 32px; height: 32px; background: transparent; border: none;
@@ -221,15 +221,14 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
   .graph-btn-wide { width: 36px; }
 
   .graph-search {
-    position: absolute; top: var(--sp-3); left: 50%;
-    transform: translateX(-50%);
-    z-index: 10; width: 320px; max-width: calc(100% - 220px);
+    position: absolute; top: var(--sp-3); left: var(--sp-3);
+    z-index: 10; width: calc(100% - 100px); max-width: 360px;
   }
   .graph-search input {
     width: 100%; border: 1px solid var(--color-border);
     background: var(--color-bg-elev); color: var(--color-text);
-    padding: 9px 14px; border-radius: 8px;
-    font-size: 0.9rem; font-family: inherit;
+    padding: 7px 12px; border-radius: 7px;
+    font-size: 0.85rem; font-family: inherit;
     box-shadow: 0 2px 6px -2px rgba(0,0,0,0.08);
   }
   .graph-search input:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
@@ -361,6 +360,8 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
     pointer-events: none; z-index: 7;
     box-shadow: 0 2px 6px -2px rgba(0,0,0,0.08);
     transition: opacity 0.3s;
+    max-width: calc(100% - 100px);
+    text-align: center;
   }
   .graph-hint.hidden { opacity: 0; }
   .graph-hint span { font-weight: 500; color: var(--color-text); }
@@ -369,19 +370,20 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
   .graph-layout.is-fullscreen .graph-hint { display: none; }
 
   @media (max-width: 768px) {
-    .graph-layout { height: 70vh; min-height: 480px; }
-    .graph-search { width: calc(100% - 240px); }
-    .graph-hubs { max-width: 220px; font-size: 0.7rem; }
-    .graph-minimap { width: 140px; height: 90px; }
+    .graph-layout { height: 65vh; min-height: 420px; }
+    .graph-search { width: calc(100% - 96px); top: var(--sp-2); left: var(--sp-2); }
+    .graph-hubs { display: none; }
+    .graph-minimap { display: none; }
     .graph-preview { right: 16px; left: 16px; width: auto; top: 70px; }
     .stat-num { font-size: 1.3rem; }
     .stat { min-width: 60px; }
   }
   @media (max-width: 480px) {
     .graph-stats { gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); }
-    .graph-hubs { display: none; }
-    .graph-minimap { display: none; }
-    .graph-search { width: calc(100% - 80px); }
+    .graph-search { width: calc(100% - 88px); top: var(--sp-2); left: var(--sp-2); }
+    .graph-hint { display: none; }
+    .graph-actions { bottom: var(--sp-2); right: var(--sp-2); }
+    .graph-hubs, .graph-minimap { display: none; }
   }
 </style>
 
@@ -439,8 +441,8 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
 
     function colorFor(c) { return (collectionStyles[c] && collectionStyles[c].color) || '#888'; }
     function sizeFor(d) {
-      if (!d) return 5;
-      return 5 + 10 * Math.sqrt(d / 42); // max degree ~42, normalize
+      if (!d) return 4;
+      return 4 + 14 * Math.sqrt(d / 42); // max degree ~42, normalize
     }
 
     // === State ===
@@ -526,7 +528,7 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         ctx.globalAlpha = 1;
       }
 
-      // === Cluster labels ===
+      // === Cluster labels (above cluster, or below if at top edge) ===
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (var rk2 in regions) {
@@ -536,14 +538,28 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         if (!visible2) continue;
         ctx.font = '600 11px system-ui, sans-serif';
         ctx.fillStyle = colorFor(rk2);
-        ctx.globalAlpha = 0.7;
-        // Draw text with stroke halo for readability
+        ctx.globalAlpha = 0.9;
         var label = (collectionStyles[rk2] && collectionStyles[rk2].label) || rk2;
-        var ly = region2.cy - region2.r - 10;
+        // Default: above the cluster (outside the ring)
+        var ly = region2.cy - region2.r - 8;
+        // Check if label would be in top "danger zone" (overlap with search bar)
+        var labelScreenY = (ly - viewY) * scale;
+        // If too close to top, place label INSIDE cluster upper half instead
+        if (labelScreenY < 50) {
+          ly = region2.cy - region2.r * 0.5;
+        }
+        // If too close to bottom, place inside cluster lower half
+        if ((ly - viewY) * scale > viewHeight - 30) {
+          ly = region2.cy + region2.r * 0.5;
+        }
+        // Final clamp
+        var finalScreenY = (ly - viewY) * scale;
+        if (finalScreenY < 20) ly = viewY + 20 / scale;
+        else if (finalScreenY > viewHeight - 15) ly = viewY + (viewHeight - 15) / scale;
         // Check if label is in viewport
         if (ly < viewY || ly > viewY + viewHeight / scale) continue;
         if (region2.cx < viewX || region2.cx > viewX + viewWidth / scale) continue;
-        // Text halo
+        // Text halo for readability
         ctx.lineWidth = 3;
         ctx.strokeStyle = THEME.bg;
         ctx.strokeText(label, region2.cx, ly);
@@ -630,6 +646,17 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         var cx = n.x;
         var cy = n.y;
 
+        // Outer ring for hub nodes (visual hierarchy)
+        if ((n.degree || 0) >= 10) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
+          ctx.lineWidth = 1.5 / scale;
+          ctx.strokeStyle = colorFor(n.collection);
+          ctx.globalAlpha = nodeAlpha * 0.6;
+          ctx.stroke();
+          ctx.globalAlpha = nodeAlpha;
+        }
+
         // Halo on hover
         if (hoveredNode === n || draggedNode === n) {
           ctx.beginPath();
@@ -653,34 +680,71 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         ctx.globalAlpha = nodeAlpha;
         ctx.stroke();
         ctx.globalAlpha = 1;
+      }  // end for nodes
 
-        // Label if hovered, or scale > 1.6, or filter active
-        var showLabel = hoveredNode === n || (hoveredNode && hoverSet[n.id]) || scale > 1.5 || (filterCol && n.collection === filterCol);
-        if (showLabel) {
-          // Clip to viewport
-          var screenX = (n.x - viewX) * scale;
-          var screenY = (n.y - viewY) * scale;
-          if (screenX > -50 && screenX < viewWidth + 50 && screenY > -30 && screenY < viewHeight + 30) {
-            var fontSize = Math.max(9, Math.min(12, 10));
-            ctx.font = '500 ' + fontSize + 'px system-ui, -apple-system, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic';
-            var textY = n.y - r - 4;
-            var txt = n.title;
-            // Truncate long titles
-            if (ctx.measureText(txt).width > 120) {
-              while (txt.length > 4 && ctx.measureText(txt + '…').width > 120) txt = txt.slice(0, -1);
-              txt += '…';
-            }
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = THEME.bg;
-            ctx.globalAlpha = nodeAlpha * 0.95;
-            ctx.strokeText(txt, n.x, textY);
-            ctx.fillStyle = THEME.text;
-            ctx.fillText(txt, n.x, textY);
-            ctx.globalAlpha = 1;
-          }
+      // === Collect labels to draw (so we can declutter) ===
+      // Priority: hovered > search > filter match > hub > high-degree
+      var labelsToDraw = [];
+      for (var li0 = 0; li0 < nodes.length; li0++) {
+        var ln = nodes[li0];
+        var lvisible = !filterCol || ln.collection === filterCol;
+        if (!lvisible) continue;
+        var lshouldShow = false;
+        var lpriority = 0;
+        if (hoveredNode === ln) { lshouldShow = true; lpriority = 1000; }
+        else if (hoveredNode && hoverSet[ln.id]) { lshouldShow = true; lpriority = 900; }
+        else if (searchMatchIds && matchSet[ln.id]) { lshouldShow = true; lpriority = 800; }
+        else if ((ln.degree || 0) >= 12) { lshouldShow = true; lpriority = 500 + (ln.degree || 0); }
+        else if (scale > 1.8) { lshouldShow = true; lpriority = 200 + (ln.degree || 0); }
+        else if (filterCol) { lshouldShow = true; lpriority = 100 + (ln.degree || 0); }
+        if (lshouldShow) {
+          var lsx = (ln.x - viewX) * scale;
+          var lsy = (ln.y - viewY) * scale;
+          if (lsx < -10 || lsx > viewWidth + 10 || lsy < -10 || lsy > viewHeight + 10) continue;
+          labelsToDraw.push({ n: ln, x: lsx, y: lsy, priority: lpriority, degree: ln.degree || 0 });
         }
+      }
+      // Sort by priority (highest first) so important labels win
+      labelsToDraw.sort(function(a, b) { return b.priority - a.priority; });
+
+      // === Declutter pass: greedy rect-overlap test ===
+      var placed = [];
+      var maxLabelWidth = scale > 1.5 ? 160 : 110;
+      var labelFontSize = scale > 1.5 ? 12 : 10;
+      ctx.font = '500 ' + labelFontSize + 'px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+
+      for (var li1 = 0; li1 < labelsToDraw.length; li1++) {
+        var lb = labelsToDraw[li1];
+        var nodeR = sizeFor(lb.degree);
+        var textY = lb.y - nodeR - 4;
+        var txt = lb.n.title;
+        if (ctx.measureText(txt).width > maxLabelWidth) {
+          while (txt.length > 4 && ctx.measureText(txt + '…').width > maxLabelWidth) txt = txt.slice(0, -1);
+          txt += '…';
+        }
+        var w = Math.min(ctx.measureText(txt).width, maxLabelWidth);
+        var h = labelFontSize + 2;
+        var rect = { l: lb.x - w/2 - 2, r: lb.x + w/2 + 2, t: textY - h, b: textY + 2 };
+        // Skip if outside viewport
+        if (rect.l < 4 || rect.r > viewWidth - 4 || rect.t < 4 || rect.b > viewHeight - 4) continue;
+        // Skip if overlaps previously placed label
+        var hits = false;
+        for (var pi = 0; pi < placed.length; pi++) {
+          var p2 = placed[pi];
+          if (!(rect.r < p2.l || rect.l > p2.r || rect.b < p2.t || rect.t > p2.b)) { hits = true; break; }
+        }
+        if (hits) continue;
+        placed.push(rect);
+        // Draw: outline (halo) + fill
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = THEME.bg;
+        ctx.globalAlpha = 0.95;
+        ctx.strokeText(txt, lb.x, textY);
+        ctx.fillStyle = THEME.text;
+        ctx.fillText(txt, lb.x, textY);
+        ctx.globalAlpha = 1;
       }
 
       ctx.restore();
@@ -1035,12 +1099,13 @@ const hubs = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 8);
         if (n.x > maxX) maxX = n.x;
         if (n.y > maxY) maxY = n.y;
       }
-      var padding = 60;
-      var bboxW = maxX - minX + padding * 2;
-      var bboxH = maxY - minY + padding * 2;
+      // More padding on top (for search bar at top of canvas), small at bottom (zoom controls are small)
+      var padTop = 80, padBottom = 20, padX = 50;
+      var bboxW = maxX - minX + padX * 2;
+      var bboxH = maxY - minY + padTop + padBottom;
       scale = Math.min(viewWidth / bboxW, viewHeight / bboxH, 1.5);
-      viewX = minX - padding;
-      viewY = minY - padding;
+      viewX = minX - padX;
+      viewY = minY - padTop;
     }
 
     // === Fullscreen (native Fullscreen API + custom fallback) ===
