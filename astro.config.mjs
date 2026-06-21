@@ -5,7 +5,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://llm-wiki.pages.dev',
+  site: 'https://wiki.h3n.my.id',
   trailingSlash: 'never',
   build: {
     format: 'directory',

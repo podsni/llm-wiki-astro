@@ -4,9 +4,11 @@ description: Revolusioner Indonesia, penulis Madilog, dan "Bapak Republik yang D
 summary: Dari guru di perkebunan Deli ke internasionalis di empat benua, kembali ke Indonesia untuk memimpin Persatuan Perjuangan, dan dieksekusi tanpa pengadilan di kaki Gunung Wilis pada 21 Februari 1949. Pahlawan Nasional 1963 yang karyanya dilarang di era Orde Baru.
 date: 1897-06-02
 updated: 1949-02-21
-category: history
-tags: [indonesia, history, biography, politics, revolution, marxism, nationalism]
+category: tokoh
+tags: [biografi, sejarah, indonesia, revolusi, republik, history, biography, politics, revolution, marxism, nationalism]
 quality: featured
+quote: "Hidupku adalah pergerakan. Aku tidak bisa diam, dan aku tidak akan berhenti sampai kaumku merdeka."
+funFact: "Tan Malaka menulis kata 'Republik Indonesia' dalam judul karyanya 'Naar de Republiek Indonesië' (1925) — hampir 20 tahun sebelum proklamasi 1945."
 role: Revolusioner, penulis, teoretisi Marxis
 affiliation: ISDV → PKI → Persatuan Perjuangan → Partai Murba
 pronunciation: tan ma-la-ka

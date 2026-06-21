@@ -24,7 +24,7 @@ const {
 
 const siteName = 'LLM Wiki';
 const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://llm-wiki.pages.dev').toString();
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://wiki.h3n.my.id').toString();
 const allEntries = await getAllEntries();
 const totalArticles = allEntries.length;
 ---
@@ -52,7 +52,7 @@ const totalArticles = allEntries.length;
   <meta property="og:type" content="website" />
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
-  <meta property="og:image" content={new URL(image, Astro.site ?? 'https://llm-wiki.pages.dev').toString()} />
+  <meta property="og:image" content={new URL(image, Astro.site ?? 'https://wiki.h3n.my.id').toString()} />
   <meta property="og:url" content={canonical} />
   <meta property="og:site_name" content={siteName} />
   <meta property="og:locale" content="en_US" />

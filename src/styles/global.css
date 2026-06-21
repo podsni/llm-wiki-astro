@@ -924,27 +924,6 @@ main { min-height: 70vh; }
 .graph-node { cursor: pointer; }
 .graph-node-label { font-family: var(--font-sans); font-size: 11px; fill: var(--color-text); pointer-events: none; }
 .graph-link { stroke: var(--color-border); stroke-opacity: 0.5; }
-.graph-controls {
-  position: absolute;
-  top: var(--sp-3);
-  right: var(--sp-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  background: var(--color-bg-elev);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: var(--sp-2);
-}
-.graph-controls select, .graph-controls input {
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text);
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
-  font-family: inherit;
-}
 .graph-legend {
   position: absolute;
   bottom: var(--sp-3);
@@ -1377,6 +1356,8 @@ main { min-height: 70vh; }
     margin: 0 0 var(--sp-4) var(--sp-5);
     shape-outside: margin-box;
   }
+  /* On desktop, hide the mobile-only infobox slot */
+  .infobox-mobile { display: none; }
 }
 
 /* ============================================
@@ -1806,6 +1787,8 @@ main { min-height: 70vh; }
   .infobox-row { flex-direction: column; gap: var(--sp-1); padding: var(--sp-2) 0; }
   .infobox-row dt { flex: 0 0 auto; padding-right: 0; font-size: 0.7rem; }
   .infobox-row dd { font-size: var(--fs-sm); }
+  /* On mobile, show the dedicated mobile infobox at the top */
+  .infobox-mobile { display: block; margin: 0 0 var(--sp-4); }
 
   /* Pullquote — less wide on mobile */
   .pullquote { padding: 0; max-width: 100%; margin: var(--sp-6) auto; }
@@ -1875,13 +1858,7 @@ main { min-height: 70vh; }
   .site-footer-stat span { font-size: 0.7rem; }
   .site-footer-inner { gap: var(--sp-3); padding: 0 var(--sp-4); font-size: var(--fs-xs); }
 
-  /* Graph view */
   .graph-container { height: 60vh; min-height: 400px; }
-  .graph-controls { top: var(--sp-2); right: var(--sp-2); padding: var(--sp-1); }
-  .graph-controls input, .graph-controls select { font-size: var(--fs-xs); padding: 0.2rem 0.4rem; }
-  .graph-legend { bottom: var(--sp-2); left: var(--sp-2); padding: var(--sp-2); gap: var(--sp-2); }
-  .graph-legend-item { font-size: 0.65rem; }
-  .graph-legend-dot { width: 8px; height: 8px; }
 
   /* Back to top — 44px minimum touch target */
   .back-to-top { width: 44px; height: 44px; bottom: var(--sp-4); right: var(--sp-4); }

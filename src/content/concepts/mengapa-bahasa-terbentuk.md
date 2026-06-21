@@ -4,9 +4,11 @@ description: Bahasa sebagai produk evolusi, kognisi, dan kultur — dari mana as
 summary: Bahasa bukan ciptaan tunggal, melainkan produk interaksi 7 juta tahun evolusi hominid, ratusan ribu tahun kultur, dan kemampuan kognitif unik manusia. Studi modern menunjukkan bahasa muncul dari gabungan tekanan sosial (gossip, koordinasi), tekanan biologis (FOXP2, Broca, Wernicke), dan kemampuan kognitif (teori pikiran, working memory). Anehnya, Large Language Models modern ternyata bisa "belajar" bahasa dari korpus statistik — menantang asumsi bahwa bahasa harus innate.
 date: 2026-06-20
 updated: 2026-06-20
-category: linguistics
-tags: [linguistics, language, evolution, cognition, ai, foxp2, broca, wernicke, philosophy]
+category: linguistik
+tags: [bahasa, linguistik, evolusi, pinker, sapir-whorf, foxp2, cognition]
 quality: featured
+quote: "Bahasa adalah instance terbaik dari evolusi kultur yang bisa dipahami melalui evolusi biologi — karena bahasa sendiri adalah produk sampingan dari otak yang lebih besar."
+funFact: "Pidgin dan Creole di seluruh dunia mengembangkan struktur gramatikal yang sangat mirip dalam waktu generasional — seolah-olah otak manusia punya 'kabel' bawaan untuk bahasa."
 infobox:
   - label: Topik
     value: Evolusi bahasa, neurolinguistik, filsafat bahasa

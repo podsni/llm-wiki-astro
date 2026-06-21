@@ -28,6 +28,8 @@ const baseFields = {
     value: z.union([z.string(), z.array(z.string()), z.number()]),
   })).optional(),
   pronunciation: z.string().optional(),
+  quote: z.string().optional(),
+  funFact: z.string().optional(),
 };
 
 const notes = defineCollection({

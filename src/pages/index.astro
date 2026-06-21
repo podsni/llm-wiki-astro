@@ -1,18 +1,46 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getAllEntries, getRecentEntries, getAllCategories, getAllTags, getEntryUrl } from '../utils/content';
+import { getAllEntries, getRecentEntries, getAllCategories, getAllTags, getEntryUrl, COLLECTIONS, COLLECTION_LABELS, COLLECTION_DESCRIPTIONS } from '../utils/content';
 import { formatDate } from '../utils/format';
 
-const recent = await getRecentEntries(6);
 const all = await getAllEntries();
+const recent = await getRecentEntries(6);
 const categories = await getAllCategories();
 const tags = await getAllTags();
 
 // Featured = articles explicitly marked quality:featured
-const featured = all.filter(({ entry }) => entry.data.quality === 'featured').slice(0, 3);
+const featured = all.filter(({ entry }) => entry.data.quality === 'featured');
 
 // Latest 3 non-featured updates for the secondary row
-const updates = recent.filter(({ entry }) => entry.data.quality !== 'featured').slice(0, 4);
+const updates = recent
+  .filter(({ entry }) => entry.data.quality !== 'featured')
+  .slice(0, 4);
+
+// Quote of the day — first featured with a quote
+const quoteEntry = featured.find((f) => f.entry.data.quote);
+
+// "Did you know" — first featured with a funFact
+const funFactEntry = featured.find((f) => f.entry.data.funFact);
+
+// On this day — entries whose date (month + day) matches today.
+// Prefer historical (different year) over same-year, but include all if no
+// historical entries exist.
+const now = new Date();
+const todayM = now.getMonth();
+const todayD = now.getDate();
+const onThisDay = all.filter(({ entry }) => {
+  const d = new Date(entry.data.date);
+  return d.getMonth() === todayM && d.getDate() === todayD;
+});
+// Sort: historical first (different year), then same-year; then by year desc
+onThisDay.sort((a, b) => {
+  const ay = new Date(a.entry.data.date).getFullYear();
+  const by = new Date(b.entry.data.date).getFullYear();
+  const aHist = ay !== now.getFullYear() ? 0 : 1;
+  const bHist = by !== now.getFullYear() ? 0 : 1;
+  if (aHist !== bHist) return aHist - bHist;
+  return by - ay;
+}).slice(0, 5);
 
 // Popular: most-connected articles (heuristic on inbound related)
 const inboundCount = new Map<string, number>();
@@ -31,61 +59,114 @@ const popular = [...inboundCount.entries()]
   .slice(0, 6)
   .map(([key]) => all.find(({ collection, entry }) => `${collection}/${entry.id}` === key))
   .filter(Boolean);
+
+// Stats per collection
+const colCounts = new Map<string, number>();
+for (const e of all) colCounts.set(e.collection, (colCounts.get(e.collection) ?? 0) + 1);
+const totalLinks = all.reduce((sum, e) => sum + (e.entry.data.related?.length ?? 0), 0);
+const totalTags = tags.length;
+
+// Today's date formatted (like Tolkien's Shire calendar feel)
+const todayLabel = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 ---
 
 <BaseLayout title="LLM Wiki" description="A personal knowledge base — articles, concepts, research, and digital gardening.">
-  <div class="container">
+  <div class="container home">
 
-    <!-- HERO: asymmetric, single idea, no SaaS button-row. On desktop, a right rail
-         shows the most recently updated article — fills the negative space and gives
-         the user a real entry point. The right rail collapses to below on mobile. -->
-    <div class="hero-grid">
-      <section class="hero" aria-labelledby="hero-title">
+    <!-- ============ HERO ============ -->
+    <header class="hero">
+      <div class="hero-main">
         <p class="hero-eyebrow">A digital garden in progress</p>
-        <h1 id="hero-title">A small <em>compendium</em><br />of things worth knowing.</h1>
+        <h1 class="hero-title">A small <em>compendium</em><br/>of things worth knowing.</h1>
         <p class="hero-lede">Articles, concepts, research notes, and the quiet connections between them — written and tended over time. Built as a personal wiki, kept as a reference book.</p>
         <button class="hero-search" data-search-open type="button" aria-label="Open search">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
           <span>Search {all.length} articles, {tags.length} tags…</span>
           <kbd>⌘ K</kbd>
         </button>
-      </section>
-
-      {recent[0] && (
-        <aside class="hero-rail" aria-label="Latest update">
-          <p class="hero-rail-label">Latest update</p>
+      </div>
+      <aside class="hero-rail" aria-label="Latest update">
+        <p class="hero-rail-label">Latest update</p>
+        {recent[0] && (
           <a class="hero-rail-card" href={getEntryUrl(recent[0].collection, recent[0].entry.id)}>
             <span class="hero-rail-date">{formatDate(recent[0].entry.data.updated ?? recent[0].entry.data.date)}</span>
             <span class="hero-rail-title">{recent[0].entry.data.title}</span>
             {recent[0].entry.data.description && (
               <span class="hero-rail-desc">{recent[0].entry.data.description}</span>
             )}
-            <span class="hero-rail-cta">Read the update →</span>
+            <span class="hero-rail-cta">Read →</span>
           </a>
-          <a class="hero-rail-secondary" href="/random">
-            <span>Or jump to a random article</span>
-            <span aria-hidden="true">→</span>
-          </a>
-        </aside>
-      )}
-    </div>
+        )}
+      </aside>
+    </header>
 
+    <!-- ============ STATS PORTAL ============ -->
+    <section class="portal-row" aria-label="Statistics">
+      <div class="portal-box">
+        <span class="portal-num">{all.length}</span>
+        <span class="portal-label">articles</span>
+      </div>
+      <div class="portal-box">
+        <span class="portal-num">{totalTags}</span>
+        <span class="portal-label">tags</span>
+      </div>
+      <div class="portal-box">
+        <span class="portal-num">{totalLinks}</span>
+        <span class="portal-label">connections</span>
+      </div>
+      <div class="portal-box">
+        <span class="portal-num">{COLLECTIONS.length}</span>
+        <span class="portal-label">collections</span>
+      </div>
+    </section>
+
+    <!-- ============ QUICK ACTIONS ============ -->
+    <nav class="quick-actions" aria-label="Quick actions">
+      <a class="quick-action" href="/all">
+        <span class="quick-action-icon">📚</span>
+        <span class="quick-action-body">
+          <span class="quick-action-title">Browse all</span>
+          <span class="quick-action-desc">{all.length} entries across {COLLECTIONS.length} collections</span>
+        </span>
+      </a>
+      <a class="quick-action" href="/az">
+        <span class="quick-action-icon">🔤</span>
+        <span class="quick-action-body">
+          <span class="quick-action-title">A–Z index</span>
+          <span class="quick-action-desc">Every entry alphabetically</span>
+        </span>
+      </a>
+      <a class="quick-action" href="/random">
+        <span class="quick-action-icon">🎲</span>
+        <span class="quick-action-body">
+          <span class="quick-action-title">Random article</span>
+          <span class="quick-action-desc">Surprise me with something</span>
+        </span>
+      </a>
+      <a class="quick-action" href="/graph">
+        <span class="quick-action-icon">🕸</span>
+        <span class="quick-action-body">
+          <span class="quick-action-title">Graph view</span>
+          <span class="quick-action-desc">See how articles connect</span>
+        </span>
+      </a>
+    </nav>
+
+    <!-- ============ FEATURED ARTICLE ============ -->
     {featured.length > 0 && (
       <section class="home-section" aria-labelledby="featured-title">
         <div class="home-section-header">
           <h2 id="featured-title">Featured</h2>
-          <a href="/articles" class="home-section-link">All articles →</a>
+          <a href="/all" class="home-section-link">Browse all →</a>
         </div>
-        <div class="featured-list">
-          {featured.map(({ collection, entry }, i) => (
-            <a class="featured-item" href={getEntryUrl(collection, entry.id)}>
-              <span class="featured-index">{String(i + 1).padStart(2, '0')}</span>
-              <span class="featured-body">
-                <span class="featured-title">{entry.data.title}</span>
-                {entry.data.description && <span class="featured-description">{entry.data.description}</span>}
-                <span class="featured-meta">
-                  {collection} · {formatDate(entry.data.updated ?? entry.data.date)}
-                </span>
+        <div class="featured-grid">
+          {featured.map(({ collection, entry }) => (
+            <a class="featured-card" href={getEntryUrl(collection, entry.id)}>
+              <span class={`pill pill-${collection}`}>{COLLECTION_LABELS[collection]}</span>
+              <span class="featured-card-title">{entry.data.title}</span>
+              {entry.data.description && <span class="featured-card-desc">{entry.data.description}</span>}
+              <span class="featured-card-meta">
+                {formatDate(entry.data.updated ?? entry.data.date)}
               </span>
             </a>
           ))}
@@ -93,45 +174,116 @@ const popular = [...inboundCount.entries()]
       </section>
     )}
 
+    <!-- ============ ON THIS DAY + QUOTE + DID YOU KNOW (3-column portal) ============ -->
+    <section class="triple-portal" aria-label="Today">
+      <!-- On this day -->
+      <div class="portal-card">
+        <h3 class="portal-title">On this day</h3>
+        <p class="portal-subtitle">{todayLabel}</p>
+        {onThisDay.length === 0 ? (
+          <p class="portal-empty">No entries for today's date.</p>
+        ) : (
+          <ul class="portal-list">
+            {onThisDay.map(({ collection, entry }) => (
+              <li>
+                <a href={getEntryUrl(collection, entry.id)}>
+                  <span class="portal-year">{new Date(entry.data.date).getFullYear()}</span>
+                  <span class="portal-item-title">{entry.data.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        <a class="portal-card-link" href="/timeline">All timeline →</a>
+      </div>
+
+      <!-- Quote -->
+      {quoteEntry && (
+        <div class="portal-card portal-card-quote">
+          <h3 class="portal-title">Quote</h3>
+          <blockquote class="portal-quote">
+            <p>"{quoteEntry.entry.data.quote}"</p>
+          </blockquote>
+          <p class="portal-attribution">
+            — <a href={getEntryUrl(quoteEntry.collection, quoteEntry.entry.id)}>{quoteEntry.entry.data.title}</a>
+          </p>
+        </div>
+      )}
+
+      <!-- Did you know -->
+      {funFactEntry && (
+        <div class="portal-card">
+          <h3 class="portal-title">Did you know</h3>
+          <p class="portal-dyk">{funFactEntry.entry.data.funFact}</p>
+          <p class="portal-attribution">
+            <a href={getEntryUrl(funFactEntry.collection, funFactEntry.entry.id)}>Read more →</a>
+          </p>
+        </div>
+      )}
+    </section>
+
+    <!-- ============ BROWSE BY COLLECTION (Tolkien-style bottom) ============ -->
+    <section class="home-section" aria-labelledby="browse-title">
+      <div class="home-section-header">
+        <h2 id="browse-title">Browse the wiki</h2>
+      </div>
+      <div class="collection-grid">
+        {COLLECTIONS.map((c) => {
+          const count = colCounts.get(c) ?? 0;
+          if (count === 0) return null;
+          return (
+            <a class="collection-tile" href={`/${c}`}>
+              <span class={`collection-tile-bar bar-${c}`} aria-hidden="true"></span>
+              <span class="collection-tile-body">
+                <span class="collection-tile-name">{COLLECTION_LABELS[c]}</span>
+                <span class="collection-tile-desc">{COLLECTION_DESCRIPTIONS[c]}</span>
+                <span class="collection-tile-count">{count} {count === 1 ? 'entry' : 'entries'}</span>
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    <!-- ============ RECENT UPDATES ============ -->
     {updates.length > 0 && (
       <section class="home-section" aria-labelledby="recent-title">
         <div class="home-section-header">
           <h2 id="recent-title">Recent</h2>
           <a href="/recent" class="home-section-link">All changes →</a>
         </div>
-        <div class="featured-list">
-          {updates.map(({ collection, entry }, i) => (
-            <a class="featured-item" href={getEntryUrl(collection, entry.id)}>
-              <span class="featured-index">{String(i + 1).padStart(2, '0')}</span>
-              <span class="featured-body">
-                <span class="featured-title">{entry.data.title}</span>
-                {entry.data.description && <span class="featured-description">{entry.data.description}</span>}
-                <span class="featured-meta">
-                  {collection} · {formatDate(entry.data.updated ?? entry.data.date)}
-                </span>
+        <div class="recent-list">
+          {updates.map(({ collection, entry }) => (
+            <a class="recent-item" href={getEntryUrl(collection, entry.id)}>
+              <span class={`pill pill-${collection}`}>{COLLECTION_LABELS[collection]}</span>
+              <span class="recent-body">
+                <span class="recent-title">{entry.data.title}</span>
+                {entry.data.description && <span class="recent-desc">{entry.data.description}</span>}
               </span>
+              <span class="recent-date">{formatDate(entry.data.updated ?? entry.data.date)}</span>
             </a>
           ))}
         </div>
       </section>
     )}
 
+    <!-- ============ MOST CONNECTED ============ -->
     {popular.length > 0 && (
       <section class="home-section" aria-labelledby="popular-title">
         <div class="home-section-header">
           <h2 id="popular-title">Most connected</h2>
           <a href="/graph" class="home-section-link">View graph →</a>
         </div>
-        <div class="featured-list">
-          {popular.map((p, i) => p && (
-            <a class="featured-item" href={getEntryUrl(p.collection, p.entry.id)}>
-              <span class="featured-index">{String(i + 1).padStart(2, '0')}</span>
-              <span class="featured-body">
-                <span class="featured-title">{p.entry.data.title}</span>
-                {p.entry.data.description && <span class="featured-description">{p.entry.data.description}</span>}
-                <span class="featured-meta">
-                  {p.collection} · {inboundCount.get(`${p.collection}/${p.entry.id}`) ?? 0} inbound links
-                </span>
+        <div class="recent-list">
+          {popular.map((p) => p && (
+            <a class="recent-item" href={getEntryUrl(p.collection, p.entry.id)}>
+              <span class={`pill pill-${p.collection}`}>{COLLECTION_LABELS[p.collection]}</span>
+              <span class="recent-body">
+                <span class="recent-title">{p.entry.data.title}</span>
+                {p.entry.data.description && <span class="recent-desc">{p.entry.data.description}</span>}
+              </span>
+              <span class="recent-date">
+                {inboundCount.get(`${p.collection}/${p.entry.id}`) ?? 0} links
               </span>
             </a>
           ))}
@@ -139,27 +291,17 @@ const popular = [...inboundCount.entries()]
       </section>
     )}
 
-    {categories.length > 0 && (
-      <section class="home-section" aria-labelledby="cats-title">
-        <div class="home-section-header">
-          <h2 id="cats-title">Browse by category</h2>
-        </div>
-        <div class="tag-list">
-          {categories.map(c => (
-            <a class="tag" href={`/category/${c.category}`}>{c.category} <span class="tag-count">{c.count}</span></a>
-          ))}
-        </div>
-      </section>
-    )}
-
+    <!-- ============ TAGS CLOUD ============ -->
     {tags.length > 0 && (
       <section class="home-section" aria-labelledby="tags-title">
         <div class="home-section-header">
           <h2 id="tags-title">Tags</h2>
-          <a href="/articles" class="home-section-link">Browse all →</a>
+          <a href="/all" class="home-section-link">Browse all →</a>
         </div>
         <div class="tag-list tag-list-cloud">
-          {tags.map(t => <a class="tag" href={`/tag/${t.tag}`}>#{t.tag} <span class="tag-count">{t.count}</span></a>)}
+          {tags.slice(0, 30).map(t => (
+            <a class="tag" href={`/tag/${t.tag}`}>#{t.tag} <span class="tag-count">{t.count}</span></a>
+          ))}
         </div>
       </section>
     )}
@@ -167,67 +309,596 @@ const popular = [...inboundCount.entries()]
 </BaseLayout>
 
 <style>
-  /* Asymmetric featured list — no card grid, just editorial rows. */
-  .featured-list {
+  /* ============ HERO ============ */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-6);
+    padding: var(--sp-8) 0 var(--sp-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+  @media (min-width: 1024px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+      gap: var(--sp-8);
+      align-items: start;
+    }
+  }
+  .hero-eyebrow {
+    margin: 0 0 var(--sp-3);
+    font-size: var(--fs-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+  .hero-title {
+    margin: 0 0 var(--sp-4);
+    font-family: var(--font-serif);
+    font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--color-primary);
+  }
+  .hero-lede {
+    margin: 0 0 var(--sp-5);
+    max-width: 36em;
+    font-size: var(--fs-lg);
+    line-height: 1.55;
+    color: var(--color-text-soft);
+  }
+  .hero-search {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 10px 14px;
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition);
+    font-family: inherit;
+  }
+  .hero-search:hover {
+    background: var(--color-bg);
+    border-color: var(--color-text-soft);
+  }
+  .hero-search kbd {
+    margin-left: auto;
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+  }
+  .hero-rail-label {
+    margin: 0 0 var(--sp-3);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+  .hero-rail-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-primary);
+    border-radius: 4px;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background var(--transition);
+  }
+  .hero-rail-card:hover {
+    background: var(--color-bg);
+  }
+  .hero-rail-date {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-rail-title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--color-primary);
+  }
+  .hero-rail-desc {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.5;
+  }
+  .hero-rail-cta {
+    font-size: var(--fs-sm);
+    color: var(--color-primary);
+    font-weight: 500;
+  }
+
+  /* ============ PORTAL ROW (stats) ============ */
+  .portal-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sp-3);
+    margin: var(--sp-6) 0 var(--sp-3);
+  }
+  @media (min-width: 540px) {
+    .portal-row { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (min-width: 1024px) {
+    .portal-row { grid-template-columns: repeat(4, 1fr); max-width: 720px; }
+  }
+  .portal-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-4) var(--sp-3);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    text-align: center;
+  }
+  .portal-num {
+    font-family: var(--font-serif);
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 600;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+  .portal-label {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-soft);
+    font-weight: 500;
+  }
+
+  /* ============ QUICK ACTIONS ============ */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-2);
+    margin: 0 0 var(--sp-6);
+  }
+  @media (min-width: 540px) {
+    .quick-actions { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1024px) {
+    .quick-actions { grid-template-columns: repeat(4, 1fr); }
+  }
+  .quick-action {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition);
+  }
+  .quick-action:hover {
+    background: var(--color-bg-soft);
+    border-color: var(--color-primary);
+  }
+  .quick-action-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+  .quick-action-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .quick-action-title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-base);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .quick-action:hover .quick-action-title {
+    color: var(--color-primary);
+  }
+  .quick-action-desc {
+    font-size: var(--fs-xs);
+    color: var(--color-text-soft);
+    line-height: 1.3;
+  }
+
+  /* ============ TRIPLE PORTAL (3 cards) ============ */
+  .triple-portal {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+    margin: var(--sp-6) 0;
+  }
+  @media (min-width: 768px) {
+    .triple-portal { grid-template-columns: 1fr 1fr; }
+  }
+  @media (min-width: 1100px) {
+    .triple-portal { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .portal-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-5);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+  .portal-card-quote {
+    background: var(--color-primary);
+    color: var(--color-bg);
+    border-color: var(--color-primary);
+  }
+  .portal-card-quote .portal-title,
+  .portal-card-quote .portal-quote,
+  .portal-card-quote .portal-attribution,
+  .portal-card-quote .portal-attribution a {
+    color: var(--color-bg);
+  }
+  .portal-title {
+    margin: 0;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-soft);
+    font-weight: 600;
+  }
+  .portal-subtitle {
+    margin: -8px 0 0;
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+  }
+  .portal-quote {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    line-height: 1.4;
+    font-style: italic;
+  }
+  .portal-attribution {
+    margin: auto 0 0;
+    padding-top: var(--sp-3);
+    font-size: var(--fs-sm);
+    border-top: 1px solid var(--color-border);
+  }
+  .portal-card-quote .portal-attribution {
+    border-top-color: rgba(255, 255, 255, 0.2);
+  }
+  .portal-attribution a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .portal-dyk {
+    margin: 0;
+    font-size: var(--fs-base);
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+  .portal-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+  .portal-list li a {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: var(--sp-3);
+    padding: var(--sp-2) 0;
+    color: var(--color-text);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--color-border);
+    align-items: baseline;
+  }
+  .portal-list li:last-child a { border-bottom: none; }
+  .portal-year {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .portal-item-title {
+    font-size: var(--fs-sm);
+    color: var(--color-text);
+  }
+  .portal-list li a:hover .portal-item-title {
+    color: var(--color-primary);
+  }
+  .portal-empty {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-style: italic;
+  }
+  .portal-card-link {
+    margin-top: auto;
+    padding-top: var(--sp-3);
+    font-size: var(--fs-sm);
+    color: var(--color-primary);
+    text-decoration: none;
+    border-top: 1px solid var(--color-border);
+  }
+
+  /* ============ FEATURED GRID ============ */
+  .featured-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+  }
+  @media (min-width: 720px) {
+    .featured-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1100px) {
+    .featured-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .featured-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-5);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  }
+  .featured-card:hover {
+    background: var(--color-bg-soft);
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+  }
+  .featured-card-title {
+    font-family: var(--font-serif);
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--color-text);
+  }
+  .featured-card:hover .featured-card-title {
+    color: var(--color-primary);
+  }
+  .featured-card-desc {
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    color: var(--color-text-soft);
+    flex: 1;
+  }
+  .featured-card-meta {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-top: auto;
+    padding-top: var(--sp-2);
+  }
+
+  /* ============ COLLECTION GRID ============ */
+  .collection-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+  }
+  @media (min-width: 540px) {
+    .collection-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 900px) {
+    .collection-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .collection-tile {
+    display: flex;
+    align-items: stretch;
+    gap: var(--sp-3);
+    padding: 0;
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text);
+    text-decoration: none;
+    overflow: hidden;
+    transition: background var(--transition), border-color var(--transition);
+  }
+  .collection-tile:hover {
+    background: var(--color-bg);
+    border-color: var(--color-primary);
+  }
+  .collection-tile-bar {
+    flex-shrink: 0;
+    width: 4px;
+  }
+  .collection-tile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--sp-3) var(--sp-3) var(--sp-3) 0;
+  }
+  .collection-tile-name {
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .collection-tile:hover .collection-tile-name {
+    color: var(--color-primary);
+  }
+  .collection-tile-desc {
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    line-height: 1.4;
+  }
+  .collection-tile-count {
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+  .bar-notes { background: #eab308; }
+  .bar-articles { background: #3b82f6; }
+  .bar-concepts { background: #a855f7; }
+  .bar-people { background: #ec4899; }
+  .bar-projects { background: #10b981; }
+  .bar-books { background: #dc2626; }
+  .bar-research { background: #06b6d4; }
+  .bar-timeline { background: #6366f1; }
+  .bar-sources { background: #8b5cf6; }
+
+  /* ============ RECENT LIST ============ */
+  .recent-list {
     display: flex;
     flex-direction: column;
     border-top: 1px solid var(--color-border);
   }
-  .featured-item {
+  .recent-item {
     display: grid;
-    grid-template-columns: 64px 1fr;
-    gap: var(--sp-4);
-    padding: var(--sp-5) 0;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--sp-3);
+    align-items: center;
+    padding: var(--sp-4) 0;
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text);
     text-decoration: none;
-    align-items: baseline;
     transition: background var(--transition);
   }
-  .featured-item:hover {
+  .recent-item:hover {
     background: var(--color-bg-soft);
-    color: var(--color-text);
   }
-  .featured-item:hover .featured-title { color: var(--color-primary); }
-  .featured-index {
-    font-family: var(--font-mono);
-    font-size: var(--fs-sm);
-    color: var(--color-text-muted);
-    letter-spacing: 0.04em;
-  }
-  .featured-body {
+  .recent-body {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: 2px;
+    min-width: 0;
   }
-  .featured-title {
+  .recent-title {
     font-family: var(--font-serif);
-    font-size: var(--fs-xl);
+    font-size: var(--fs-lg);
     font-weight: 500;
+    line-height: 1.3;
     color: var(--color-text);
-    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .featured-description {
-    font-size: var(--fs-base);
+  .recent-item:hover .recent-title {
+    color: var(--color-primary);
+  }
+  .recent-desc {
+    font-size: var(--fs-sm);
     color: var(--color-text-soft);
-    line-height: 1.5;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
-  .featured-meta {
+  .recent-date {
     font-size: var(--fs-xs);
     color: var(--color-text-muted);
-    text-transform: none;
-    letter-spacing: 0.01em;
-    margin-top: var(--sp-1);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
+  @media (max-width: 640px) {
+    .recent-item {
+      grid-template-columns: 1fr;
+      gap: var(--sp-2);
+    }
+    .recent-date {
+      order: -1;
+      color: var(--color-text-muted);
+    }
+  }
+
+  /* ============ TAG CLOUD ============ */
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: var(--fs-sm);
+    color: var(--color-text-soft);
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background var(--transition), color var(--transition);
+  }
+  .tag:hover {
+    background: var(--color-primary);
+    color: var(--color-bg);
+    border-color: var(--color-primary);
+  }
   .tag-count {
+    font-size: 0.85em;
     color: var(--color-text-muted);
     font-variant-numeric: tabular-nums;
-    margin-left: 0.3em;
-    font-size: 0.85em;
   }
-  .tag-list-cloud .tag {
-    font-weight: 400;
+  .tag:hover .tag-count {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* ============ Section spacing ============ */
+  .home-section {
+    margin: var(--sp-8) 0;
+  }
+  .home-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    flex-wrap: wrap;
+  }
+  .home-section-header h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--fs-2xl);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .home-section-link {
+    font-size: var(--fs-sm);
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .home-section-link:hover {
+    text-decoration: underline;
+  }
+
+  /* ============ MOBILE TWEAKS ============ */
+  @media (max-width: 640px) {
+    .hero {
+      padding: var(--sp-5) 0 var(--sp-4);
+    }
+    .hero-rail {
+      margin-top: var(--sp-3);
+    }
+    .home-section {
+      margin: var(--sp-6) 0;
+    }
+    .featured-card {
+      padding: var(--sp-4);
+    }
   }
 </style>
