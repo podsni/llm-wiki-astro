@@ -1,87 +1,86 @@
 ---
-title: "Prose Edda"
-description: "Sumber terpenting untuk mitologi Norse — ditulis Snorri Sturluson sekitar 1220, terdiri dari empat bagian yang mendokumentasikan dewa-dewa, penciptaan dunia, dan puisi skaldic."
-summary: Manual ensiklopedis tentang mitologi Norse dan puisi skaldic, ditulis oleh Snorri Sturluson sebagai pegangan untuk penyair istana.
-date: 1220-01-01
-author: "Snorri Sturluson"
-category: source
-sourceType: book
-sourceUrl: "https://en.wikipedia.org/wiki/Prose_Edda"
-tags: [norse, medieval, mythology, edda, snorri-sturluson, skaldic, poetry]
-quality: featured
-infobox:
-  - label: "Judul asli"
-    value: "Edda (kemudian disebut Prose Edda atau Younger Edda)"
-  - label: "Pengarang"
-    value: "Snorri Sturluson"
-  - label: "Tahun"
-    value: "sekitar 1220"
-  - label: "Bahasa"
-    value: "Old Norse (Norse Kuno)"
-  - label: "Bagian"
-    value: "4 (Prolog, Gylfaginning, Skáldskaparmál, Háttatal)"
-  - label: "Genre"
-    value: "Mitografi + manual puisi"
-  - label: "Naskah utama"
-    value: "Codex Regius (GKS 2367 4to), 1325"
-pronunciation: "[ˈproʊs ˈɛdːa]"
-quote: "In the beginning was Ginnungagap, the yawning void, and from it sprang the worlds — the cold of Niflheim to the north, the fire of Muspel to the south, and where they met, the first drops of rime, and from them Ymir, the first of the frost-giants, was shaped."
-funFact: "Snorri menulis Prose Edda di Reykjanes, salah satu peternakan bangsawannya — bukan di Reykholt, tempat dia dibunuh. Ia sedang mengelola peternakan yang diberikan oleh Jarl Skúli sebagai hadiah dari Norwegia."
+title: "Prose Edda (Younger Edda)"
+description: "Manual puisi Norse yang ditulis oleh Snorri Sturluson (c. 1220). Dokumen kunci untuk memahami mitologi Norse. Juga disebut Younger Edda."
+summary: "Prose Edda: c. 1220, Snorri Sturluson. 4 bagian: Prologue, Gylfaginning (Odin), Skáldskaparmál (Puisi), Háttatal (Metrum). Sumber utama mitologi Norse."
+date: 2026-06-21
+updated: 2026-06-21
+category: "sources"
+tags: ["viking", "sejarah", "sumber"]
+aliases: []
+related: ["/concepts/norse-mythology", "/concepts/sagas-islandia"]
+references:
+  - title: "Wikipedia"
+    url: "https://en.wikipedia.org/wiki/Prose_Edda_(Younger_Edda)"
+
+quality: "good"
 ---
 
 # Prose Edda
 
-**Prose Edda** (juga disebut *Younger Edda* atau *Edda prosa*) adalah sumber tertulis **paling penting** untuk [mitologi Norse](/concepts/norse-mythology), ditulis dalam bahasa Old Norse oleh [Snorri Sturluson](/people/snorri-sturluson) sekitar tahun 1220. Karya ini merupakan **pegangan ensiklopedis** untuk penyair istana — mengajarkan mitos, kosmologi, dan teknik puisi skaldic — pada saat Norwegia dan Islandia sedang mengadopsi bahasa Latin dan kehilangan memori lisan tentang warisan pagan mereka.
+## Definisi
+
+**Prose Edda** (atau *Younger Edda*, *Snorra Edda*) adalah manual puisi dan mitologi Norse yang ditulis oleh **Snorri Sturluson** c. **1220 M**. Dokumen kunci untuk memahami mitologi Norse pra-Kristen.
+
+## Struktur
+
+### 1. Formáli (Prologue)
+
+- Pengantar Snorri
+- Mempertahankan puisi Norse vs Kritik Kristen
+
+### 2. Gylfaginning
+
+- Cerita Gylfi
+- Mitos penciptaan dunia
+- Kisah para dewa (Æsir)
+- Ragnarök (kiamat)
+- Asal-usul Odin, Thor, Loki, Freyja
+
+### 3. Skáldskaparmál
+
+- Manual puisi (*skáldskapr*)
+- **Kennings** (metafora) — c. 700 kennings untuk Odin
+- Simbolisme puisi
+- Heiti (nama lain dewa)
+
+### 4. Háttatal
+
+- Bentuk-bentuk puisi
+- Metrum Norse
+- Bukti puisi (Snorri sendiri)
+- Dróttkvætt, hrynhent, dll
+
+## Signifikansi
+
+- **Sumber primer** — mitologi Norse pra-Kristen
+- **Manual** — untuk penyair (skálds)
+- **Dokumentasi** — ketika paganisme sudah hilang
+- **Nilai sastra** — tinggi
+- **Sastra referensi** — Tolkien, dll
 
 ## Konteks
 
-Pada awal abad ke-13, Kristen sudah menjadi agama dominan di Skandinavia selama hampir tiga abad. Generasi baru bangsawan Skandinavia, terutama di Norwegia, **kehilangan kontak dengan mitologi pagan** nenek moyang mereka, namun masih menikmati puisi-puisi skaldic yang penuh dengan referensi ke dewa-dewa, troll, dan tempat mistis.
+Ditulis di **Reykjavík**, Islandia, **c. 1220**. Snorri adalah *lögsögumaðr* (penyampai hukum) di Althing. Tujuan Snorri:
 
-Snorri menulis *Prose Edda* untuk **menjembatani jurang itu** — memberikan konteks mitologis untuk memahami kénningar (metafora) puisi skaldic yang tidak lagi dipahami begitu saja.
+- **Melestarikan** puisi dan mitologi Norse
+- **Mengajarkan** keponakan dan murid
+- **Kritik** — kontra pandangan Kristen bahwa Norse 'iblis'
 
-## Bagian-Bagian
+## Penulis
 
-### 1. Prolog (euhemeristik)
-Snorri memulai dengan prolog kontroversial yang mencoba menyelaraskan mitologi Norse dengan **tradisi Kristen dan klasik** — menyajikan dewa-dewa Norse sebagai raja-raja Trojan yang datang dari Asia. Pendekatan ini disebut **euhemerisme** — interpretasi mitologi sebagai sejarah yang ter-elevate.
+- **Snorri Sturluson** (1179-1241)
+- Lihat: [Sturlung Age](/concepts/sturlung-age), [Saga Age](/concepts/saga-age)
 
-### 2. Gylfaginning
-"The Bewilderment of Gylfi" — bagian **paling mitologis**, di mana Raja Swedia Gylfi mengunjungi Asgard dengan menyamar sebagai kakek tua dan mengajukan tiga pertanyaan kepada tiga dewa (Har, Jafnhar, dan Þriði, yang merupakan Odin dalam samaran). Jawaban mereka mencakup:
+## Edisi
 
-- **Penciptaan dunia** dari Ginnungagap (kekosongan)
-- **Ymir**, raksasa purba yang tubuhnya menjadi bahan dunia
-- **Asgard** dan sembilan dunia di Yggdrasil (pohon dunia)
-- **Odin, Thor, Loki** dan para dewa Æsir
-- **Ragnarǫk** — kiamat para dewa
+- **Codex Regius** (c. 1270) — manuskrip utama
+- **Codex Wormianus** (c. 1330) — versi lain
+- **Codex Trajectinus** (c. 1600) — parsial
+- **AM 748 I 4to** — fragmen
 
-### 3. Skáldskaparmál
-"The Language of Poetry" — manual **kénningar** (metafora puitis) yang merangkum ratusan cara untuk merujuk pada Odin, Thor, dan konsep-konsep lain. Ini adalah **sumber utama** untuk kosa kata puisi skaldic.
+## Lihat Juga
 
-### 4. Háttatal
-"The Enumeration of Meters" — 102 stanza puisi yang ditulis oleh Snorri sendiri, mendemonstrasikan **bentuk-bentuk metrum** yang digunakan dalam puisi skaldic.
+- [Elder Edda (Poetic Edda)](/concepts/poetic-edda) — puisi
+- [Snorri Sturluson](/people/snorri-sturluson) — penulis
+- [Saga Age](/concepts/saga-age)
 
-## Naskah
-
-*Prose Edda* sampai kepada kita terutama melalui dua naskah:
-
-- **Codex Regius (GKS 2367 4to)** — ditulis 1325, dianggap paling otoritatif
-- **Codex Wormianus (AM 242 fol)** — naskah tertua, sekitar 1350, dengan komentar Snorri
-
-## Pengaruh
-
-- Menjadi **dasar** untuk hampir semua studi mitologi Norse modern
-- Sumber primer untuk [Wagner](https://en.wikipedia.org/wiki/Richard_Wagner)'s *Ring Cycle* (meskipun Wagner lebih banyak menggunakan [*Völsunga saga*](https://en.wikipedia.org/wiki/V%C3%B6lsunga_saga))
-- Diacu dalam [*Heimskringla*](/books/heimskringla) (Ynglinga saga)
-- Inspirasi untuk J.R.R. Tolkien ([Silmarillion](https://en.wikipedia.org/wiki/The_Silmarillion))
-
-## Lihat juga
-
-- [Snorri Sturluson](/people/snorri-sturluson) — pengarang
-- [Heimskringla](/books/heimskringla) — karya Snorri lainnya
-- [Norse Mythology](/concepts/norse-mythology) — konteks
-- [Saga](/concepts/saga) — genre
-
-## Referensi
-
-- Snorri Sturluson (1931). *The Prose Edda*. Trans. Arthur Gilchrist Brodeur. New York: American-Scandinavian Foundation.
-- Snorri Sturluson (2005). *The Prose Edda*. Trans. Jesse L. Byock. Penguin Classics.
-- Wikipedia: [Prose Edda](https://en.wikipedia.org/wiki/Prose_Edda) (CC BY-SA 4.0).
