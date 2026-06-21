@@ -205,6 +205,21 @@ const payload = JSON.stringify({
       return `${Math.floor(days / 365)}y ago`;
     };
 
+    // Format time of day (HH:MM) for recent items.
+    const formatTime = (ts: number): string => {
+      const d = new Date(ts);
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    };
+
+    // Format full timestamp for tooltip.
+    const formatFullTimestamp = (ts: number): string => {
+      const d = new Date(ts);
+      return d.toLocaleString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+    };
+
     const esc = (s: string) =>
       String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -215,18 +230,24 @@ const payload = JSON.stringify({
       const isFresh = ageDays <= 2;
       const label = data.labels[e.collection] ?? e.collection;
       const age = ageLabel(createdTs);
+      const time = formatTime(createdTs);
+      const fullTimestamp = formatFullTimestamp(createdTs);
+      // For very recent items (<24h), show time prominently alongside age.
+      const timePart = ageDays <= 1
+        ? `<span class="meta-time">${esc(time)}</span>`
+        : '';
       const tagsHtml = (e.tags ?? [])
         .slice(0, 4)
         .map((t) => `<span class="meta-tag">#${esc(t)}</span>`)
         .join(' ');
       const meta =
         sort === 'newest'
-          ? `<span class="meta-age" title="${esc(createdDate.toISOString())}">added ${esc(age)}</span>`
+          ? `<span class="meta-age" title="${esc(fullTimestamp)}">added ${esc(age)} ${timePart}</span>`
           : sort === 'updated' && e.updated
-            ? `<span>updated ${esc(formatDateShort(e.updated))}</span>`
+            ? `<span title="${esc(formatFullTimestamp(new Date(e.updated).valueOf()))}">updated ${esc(formatDateShort(e.updated))}</span>`
             : sort === 'date'
-              ? `<span>${esc(formatDateShort(e.date))}</span>`
-              : `<span>added ${esc(age)}</span>`;
+              ? `<span title="${esc(formatFullTimestamp(new Date(e.date).valueOf()))}">${esc(formatDateShort(e.date))}</span>`
+              : `<span title="${esc(fullTimestamp)}">added ${esc(age)} ${timePart}</span>`;
       return `
         <a class="list-item" href="${esc(e.url)}">
           <div class="list-item-head">
@@ -548,6 +569,19 @@ const payload = JSON.stringify({
   .meta-age {
     color: var(--color-primary, #2d4a3a);
     font-weight: 500;
+  }
+  .meta-time {
+    color: var(--color-text-soft, #888);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    padding: 1px 6px;
+    background: var(--color-bg-soft, #f7f7f5);
+    border-radius: 3px;
+    margin-left: 2px;
+  }
+  .meta-time::before {
+    content: '· ';
+    margin-right: 2px;
   }
   .meta-tags {
     display: inline-flex;
