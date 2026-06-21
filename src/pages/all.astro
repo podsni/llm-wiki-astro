@@ -330,14 +330,30 @@ const payload = JSON.stringify({
     };
 
     // Intercept chip clicks so we update the URL with pushState and re-render
-    // without a full page reload. Falls back to default link behavior if JS
-    // is unavailable.
+    // without a full page reload. We rebuild the URL from current search params
+    // plus the chip's data attribute, so combined filters (sort + col + tag)
+    // are preserved across clicks.
+    const buildChipUrl = (chip: HTMLElement): string => {
+      const params = new URLSearchParams(window.location.search);
+      if ('sort' in chip.dataset) {
+        if (chip.dataset.sort === 'newest') params.delete('sort');
+        else params.set('sort', chip.dataset.sort!);
+      } else if ('col' in chip.dataset) {
+        if (chip.dataset.col === 'all') params.delete('col');
+        else params.set('col', chip.dataset.col!);
+      } else if ('tag' in chip.dataset) {
+        if (!chip.dataset.tag) params.delete('tag');
+        else params.set('tag', chip.dataset.tag!);
+      }
+      const qs = params.toString();
+      return '/all' + (qs ? '?' + qs : '');
+    };
+
     document.querySelectorAll<HTMLAnchorElement>('.all-filters .chip').forEach((chip) => {
       chip.addEventListener('click', (ev) => {
         ev.preventDefault();
-        const href = chip.getAttribute('href') ?? '/all';
-        const u = new URL(href, window.location.origin);
-        window.history.pushState({}, '', u.pathname + u.search);
+        const newUrl = buildChipUrl(chip);
+        window.history.pushState({}, '', newUrl);
         applyState();
         // Scroll to top of list so user sees the result.
         const listTop = document.querySelector('.all-filters');
